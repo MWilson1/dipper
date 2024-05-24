@@ -1,0 +1,216 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Document name: colrd.pro
+; Created by:    Phil &, HAO/NCAR, Boulder CO USA, August 13, 1996
+;
+; Last Modified: Wed Jun 21 09:41:46 2006 by judge (judge) on edlen.local
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+PRO colrd, debug=debug, filen=filen, lu=lu,$
+           nocheck=nocheck, status=status,indexadd=indexadd
+;+
+; PROJECT:
+;       HAOS-DIPER
+;
+; NAME:
+;       colrd
+;
+; PURPOSE: Reads collisional data from atomic data file
+;       
+; EXPLANATION:
+;       
+; CALLING SEQUENCE: 
+;       colrd, gendata, plot=plot, debug=debug, filen=filen, lu=lu
+;
+; INPUTS:
+;       
+; OPTIONAL INPUTS: 
+;       None.
+;
+; OUTPUTS:
+;       None.
+;
+; OPTIONAL OUTPUTS:
+;       None.
+;
+; KEYWORD PARAMETERS: 
+;       /help.  Will call doc_library and list header, and return
+;
+; CALLS:
+;       None.
+;
+; COMMON BLOCKS:
+;       None.
+;
+; RESTRICTIONS: 
+;       None.
+;
+; SIDE EFFECTS:
+;       None.
+;
+; CATEGORY:
+;       
+; PREVIOUS HISTORY:
+;       Written August 13, 1996, by Phil &, HAO/NCAR, Boulder CO USA
+;
+; MODIFICATION HISTORY:
+;       
+; VERSION:
+;       Version 1, February 25, 2006
+;-
+;
+@cdiper
+@cse
+if(n_elements(filen) eq 0 and n_elements(lu) eq 0) then begin
+   messdip,'colrd:  you must specify only one of filen or lu (unit number)'
+endif
+if(n_elements(filen) gt 0 and n_elements(lu) gt 0) then begin
+   messdip,'colrd:  you must specify only one of filen or lu (unit number)'
+endif
+;
+; in common block cgencol- new data entered each time 
+; 
+newcol = 1 
+;
+if(n_elements(filen) gt 0 and n_elements(lu) eq 0) then begin
+   if(n_elements(debug) gt 0) then print,'colrd:  reading file ',filen
+  cstrip,filen,/nosig
+  openr,lu,'dums.dat',/get
+endif
+pl='N'
+if(n_elements(plot) gt 0) then pl='Y'
+;
+coll = coldef
+;
+on_ioerror, err_read
+text=''
+text2=''
+text1=''
+ix=0
+loop:
+  readf,lu,text
+  if(strtrim(text,2) ne 'GENCOL') then goto,loop
+  ii=0l
+  on_ioerror,err_read
+  ix=-1
+  nnt=1
+  tmp=fltarr(nnt)
+  while not eof(lu) do begin 
+     ix=ix+1
+     rpt:
+     readf,lu,form='(a20,a40)',text1,text2
+     if(strlen(strtrim(text1,2)) eq 0) then goto, rpt
+     if(strtrim(text1,2) eq 'END') then goto,end_read
+     coll.key=strtrim(getwrd(text1,0),2)
+     key4=strmid(coll.key,0,4)
+     if(coll.key eq 'TEMP') then begin
+        nnt=0
+        readf,lu,text1
+        nnt=fix(getwrd(text1,0))
+        tmp=fltarr(nnt)
+        for ii=0,nnt-1 do tmp(ii)=float(getwrd(text1,ii+1))
+;
+;  loop reads until all temperatures are filled
+;
+        loop3:
+        ji=where(tmp ne 0.,kount)
+        nj=n_elements(ji)-1
+        if(kount ne nnt) then begin
+           readf,lu,text1
+           for ii=ji(nj)+1,nnt-1 do tmp(ii)=float(getwrd(text1,ii-ji(nj)-1))
+           goto,loop3
+        endif
+;
+;  end loop
+;
+        coll.temp=tmp & coll.data=tmp & coll.nt=nnt & coll.ihi=-1 & coll.ilo=-1
+        goto, next
+     endif   
+     coll.nt=nnt
+;
+; temperatures now defined
+;
+     i=0 & j=0
+     if(coll.key eq 'SEMI') then coll.nt=1
+     IF(coll.key EQ 'BURGESS') THEN coll.nt=1
+;
+; store Shull and Van Steenberg parameters in coll.data
+;
+     if(coll.key eq 'SHULL82') then coll.nt=8  
+     if(coll.key eq 'LTDR') then coll.nt=5
+     if(coll.key eq 'AR85-RR') then coll.nt=2  
+     if(coll.key eq 'AR85-CEA') then coll.nt=1
+     if(coll.key eq 'AR85-CH') then coll.nt=6
+     if(coll.key eq 'AR85-CHE') then coll.nt=6
+     if(coll.key eq 'AR85-CH+') then coll.nt=6
+     if(coll.key eq 'AR85-CHE+') then coll.nt=6
+     if(coll.key eq 'SPLUPS') then coll.nt=9
+     if(coll.key eq 'SPLUPS5') then coll.nt=9
+     if(coll.key eq 'SPLUPS9') then coll.nt=13
+     if(coll.key eq 'AR85-CDI') then begin
+        nshell=1
+        readf,lu,i,j,nshell
+;        j+=indexadd
+;        i+=indexadd
+        coll.nt=5*nshell
+     endif
+     coll.temp=0.0*coll.temp
+     coll.temp=tmp
+     dum=fltarr(coll.nt)
+     if(coll.key eq 'AR85-CDI') then begin 
+        readf,lu,dum
+     endif else if(coll.key eq 'AR85-CEA') then begin 
+        fcea=0.
+        readf,lu,i,j
+        readf,lu,fcea
+        dum(0)=fcea
+     endif else begin 
+        readf,lu,i,j,dum 
+     endelse
+     j=j-1
+     i=i-1
+     j+=indexadd
+     i+=indexadd
+     coll.ihi= j
+     coll.ilo= i
+     coll.data=dum
+;     stop
+     if(coll.key eq 'OHM' or coll.key eq 'CE' or coll.key eq 'CI' $
+        or coll.key eq 'SHULL82' or coll.key eq 'LTDR' OR coll.key EQ 'BURGESS'$
+        or coll.key eq 'AR85-CDI' or coll.key eq 'AR85-CEA' ) then begin
+        coll.ihi= j>i
+        coll.ilo= i<j
+     endif
+     next:
+     IF(ix EQ 0) THEN col = coll ELSE col = [col,coll]
+;
+     if(n_elements(debug) eq 1) then begin
+        x=col(ix).temp(0:col(ix).nt-1)
+        y=col(ix).data(0:col(ix).nt-1)
+        print, col(ix).key
+        print,col(ix).ihi,col(ix).ilo
+        print,x,y
+        strr=''
+        read,'press return to print out next collision parameter (Q to stop)',strr
+        if(strupcase(strr) eq 'Q') then debug=[0,0]
+     endif
+endwhile
+;
+err_read:
+messdip,'Error reading file, latest string read was: '+text1,/inf
+messdip,'This occurred during reading of keyword number: '+strn(ix),/inf
+end_read:
+FREE_LUN,lu
+if(ix eq 0) then begin
+  print,'Colrd: no gencol data in file'
+  col=coldef
+  return
+endif
+col=col(0:ix-1)
+if(n_elements(debug) gt 0) then print,' number of collisional transition keys read: ',ix
+if(n_elements(filen) gt 0) then free_lun,lu
+return
+end
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; End of 'colrd.pro'.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

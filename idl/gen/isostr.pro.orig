@@ -1,0 +1,180 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Document name: isostr.pro
+; Created by:    judge, June 21, 2006
+;
+; Last Modified: Thu Jun 22 16:13:08 2006 by judge (judge) on edlen.local
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+FUNCTION isostr,instr,elem = elem
+;+
+; PROJECT:
+;       HAOS-DIAPER
+;
+; NAME:
+;       isostr
+;
+; PURPOSE: obtain a structure of data along an isoelectronic sequence
+;       
+; EXPLANATION:
+;       
+; CALLING SEQUENCE: 
+;       out=isostr(instr)
+;
+; INPUTS:
+;       instr   one element of a lvl, trn or col structure
+;               for example, out=isostr(lvl(1)) will return
+;               isoelectronic data for the second level 
+;               out=isostr(trn(10)) will return    
+;               isoelectronic data for the eleventh transition
+; OPTIONAL INPUTS: 
+;       None.
+;
+; OUTPUTS:
+;       out   a structure containing data values along the
+;       isoelectronic sequence
+;
+; OPTIONAL OUTPUTS:
+;       None.
+;
+; KEYWORD PARAMETERS: 
+;
+; CALLS:
+;       None.
+;
+; COMMON BLOCKS:
+;       None.
+;
+; RESTRICTIONS: 
+;       None.
+;
+; SIDE EFFECTS:
+;      
+; CATEGORY:
+;       
+; PREVIOUS HISTORY:
+;
+; MODIFICATION HISTORY:
+;       
+; VERSION:
+;       Version 1, February 24, 2006
+;-
+;
+@cdiaper
+;   
+; what kind of structure is it?
+islvl = tag_exist(instr,'qn_n')
+istrn = tag_exist(instr,'alamb')
+iscol = tag_exist(instr,'key')
+IF(islvl+istrn+iscol EQ 0) THEN BEGIN 
+   message,'input structure is not of lvl, trn or col type'
+   return,instr
+endif
+IF(islvl+istrn+iscol GT 1) THEN BEGIN 
+   message,'input structure is not of lvl, trn or col type'
+   return,instr
+endif
+;
+IF(islvl) THEN BEGIN 
+   dbopen,'atom_lvl,atom_bib'
+   lab = getwrd(instr.label,2,50)  ; label except for Atom  Ion 
+   at = getwrd(instr.label)
+   iatom = atomn(at,/num)
+   iso = iatom-instr.ion+1
+   ok = dbfind('isos='+string(iso))
+   dbext,ok,'label',label
+   array = label
+   FOR i = 0,n_elements(label)-1 DO array(i) = getwrd(label(i),2,50) 
+   k = where(array EQ lab)
+   out = replicate(lvldef,n_elements(k))
+   str = 'atom, ion, e, e_units, g, coupling, glande, label' 
+   dbext, ok(k), str,elem, ion,  ev, e_units,g, coupling,glande, label
+   str = 'qn_2jp1, qn_2sp1, qn_bigl, qn_n, qn_smalll, qn_eff, qn_parent, qn_parity,bib_ref'
+   dbext, ok(k), str,qn_2jp1,qn_2sp1,qn_bigl,qn_n,qn_smalll,qn_eff,qn_parent,qn_parity,ref
+   dbclose
+   out.ion =  ion
+   out.ev =  ev*cc*hh/ee        ; cm-1 to eV
+   out.g =  g
+   out.coupling =  coupling
+   out.glande =  glande
+   out.label =  label
+   out.qn_2jp1 =  qn_2jp1
+   out.qn_2sp1 =  qn_2sp1
+   out.qn_bigl =  qn_bigl
+   out.qn_n =  qn_n
+   out.qn_smalll =  qn_smalll
+   out.qn_eff =  qn_eff
+   out.qn_parent =  qn_parent
+   out.qn_parity = qn_parity 
+   out.ref = ref
+ENDIF
+IF(istrn) THEN BEGIN
+;
+; get labi and labj for the input structure levels
+;
+   dbopen,'atom_bb'
+   w = instr.alamb &  dw = w/1.e6
+   f = instr.f &  df = f/1.e4
+   ok = dbfind('wl='+string(w)+'('+string(dw)+')'+$
+   ',f='+string(f)+'('+string(df)+')')
+   dbext,ok,'f_lab_i',f_lab_i
+   dbext,ok,'f_lab_j',f_lab_j
+;
+   dbopen,'atom_lvl'
+   dbext,f_lab_i,'label,g,ion',labi,gi,ioni
+   dbext,f_lab_j,'label,g,ion',labj,gj,ionj
+   labeli = labi
+   labi =  getwrd(labi,2,50) 
+   labj =  getwrd(labj,2,50) 
+   iatom = atomn(getwrd(labeli),/num)
+   isos = iatom-ioni+1
+   lvlok = dbfind('isos='+string(isos)) ; fast
+;
+; now find indices matching labi and labj
+;   
+   dbext,lvlok,'label',labok ; this is all levels of isosequence
+   array = labok
+   FOR i = 0,n_elements(labok)-1 DO array(i) = getwrd(labok(i),2,50) 
+   imatch = where(array EQ labi)
+   jmatch = where(array EQ labj)
+   imatch = lvlok(imatch)  ; lvl index where lower array eq labi
+   jmatch = lvlok(jmatch)  ; lvl index where upper array eq labj
+;
+;  now match these to the atom_bb database
+;   
+   dbopen, 'atom_bb,atom_bib'
+   fidx = dbget('f_lab_i', imatch, /silent) ; finds bb indices with lvl indices enidx
+   fjdx = dbget('f_lab_j', jmatch, /silent)
+   ok = 0l
+   FOR i = 0,n_elements(fjdx)-1 DO BEGIN 
+      k = where(fidx EQ fjdx(i),coun)
+      IF(coun NE 0) THEN ok = [ok,k]
+   ENDFOR
+   ok = ok(1:*)
+   fidx = fidx(ok)
+;
+;  get data and write output to structure out
+;
+   out = replicate(trndef,n_elements(fidx))
+   dbext, fidx,'f,wl,f_lab_i, f_lab_j, type,f_acc, atom,ion,isos,bb_ref',$
+      f,wl,f_lab_i, f_lab_j, type,f_acc, at,ion,isos,bb_ref
+;
+   out.f = f
+   out.alamb = wl
+   w = float(out.alamb)
+   gi = gi(0) &  gj = gj(0)
+   out.a=out.f*6.671e15*gi/(gj*w*w)
+   out.bji=w*w*w*out.a/hc2
+   out.bij=out.bji*gj/gi
+   out.type = type
+   dbclose
+ENDIF
+IF(iscol) THEN BEGIN
+   message,'can use same coding (almost) as trn case!',/inf
+   message,'col case not ready yet'
+ENDIF
+return,out
+END
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; End of 'isostr.pro'.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

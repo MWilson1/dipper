@@ -1,0 +1,378 @@
+####################################################################################################
+#
+# Main subprograms for pydip package
+#
+####################################################################################################
+import sqlite3
+import numpy as np
+from scipy.interpolate import CubicSpline
+from matplotlib import pyplot as plt
+def const():
+    # NAME: 
+    #       const 
+    # 
+    # PURPOSE: Stores atomic and physical constants in pydip dict
+    # 
+    # EXPLANATION: 
+    #       The following variables are set (cgs units throughout): 
+    # 
+    #       EE               electon charge in V = e^2/r
+    #       HH=6.626176D-27  planck's constant 
+    #       CC=2.99792458D10 speed of light 
+    #       EM=9.109534D-28  electron mass 
+    #       UU=1.6605655D-24 hydrogen mass 
+    #       BK=1.380662D-16  Boltzmann constant 
+    #       PI=3.14159265359 pi 
+    #       following combinations are stored 
+    #       HCE=HH*CC/EE*1.D8 
+    #       HC2=2.*HH*CC *1.D24 
+    #       HCK=HH*CC/BK*1.D8 
+    #       EK=EE/BK 
+    #       HNY4P=HH*CC/QNORM/4./PI*1.D-5 
+    #       RYDBERG=2*PI*PI*EM*EE*(EE/HH)*(EE/HH)*(EE/HH)/CC 
+    #       ALPHA=2*PI*ee*ee/HH/CC   fine structure constant 
+    ee=1.602189e-12
+    hh=6.626176e-27
+    cc=2.99792458e10
+    eesu=ee*cc/1.e8
+    es= eesu
+    em=9.109534e-28
+    bk=1.380662e-16
+    pi=3.14159265359e0
+    bk=1.380662e-16
+    uu=1.6605655e-24
+
+    c = {"ee":ee,"hh":hh,"cc":cc,"em":em,"uu":uu,"bk":bk,"pi":pi,"hce":(hh/ee*cc)*1.e8,"hc2":2.*hh*cc *1.e24,
+    "hck":hh*cc/bk*1.e8,"ek":ee/bk,"es": es,"rydinf":2*pi*pi*em*es*(es/hh)*(es/hh)*(es),"alphafs":2*pi*es*es/hh/cc,"eesu": eesu,
+    "a0 ": (hh/eesu)*(hh/eesu)/(4*pi*pi)/em,"bohrm":hh*eesu/4/pi/em/cc,"designations": 'SPDFGHIKLMNOQRTU'}
+    return c
+
+####################################################################################################
+def nla(inla):
+
+    """ takes an integer number encoded as integer nla and decodes it into
+    principal QN n, orbital ang mom l, and number of electrons a
+    for example 301  is 3s^1 orbital, returns '3S1'
+    """
+    n = int(inla/100)
+    l = int( (inla-n*100)/10)
+    a = int(inla-n*100 -l*10)
+    sn=str(n)
+    sl = const()['designations'][int(l)]
+    print(nla,n,l,a)
+    sa=''
+    if(a > 0): sa=str(a)
+    return sn+sl+sa
+
+####################################################################################################
+def slp(islp):
+    ispin = int(islp/100 )
+    ill =int( (islp-ispin*100)/10 )
+    ipar = int(islp-ispin*100 -ill*10) 
+    # 
+    strl = const()['designations'][ill]
+    sspin = str(ispin) 
+    par = ['E','O'] 
+    spar = par[ipar]
+    return sspin+strl+spar
+ 
+####################################################################################################
+def diprd(atom,ions):
+    dir='/Users/judge/pydiper/dbase/'
+    file='lvlsql.db'
+    lvl=lvlrd(dir+file,atom,ions)
+    file='bbsql.db'
+    bb=bbrd(dir+file,atom,ions)
+    file='cbbsql.db'
+    cbb=cbbrd(dir+file,lvl)
+    atom={'lvl':lvl,'bb':bb,'cbb':cbb}
+    atom=zindex(atom)
+    return atom
+
+####################################################################################################
+def zindex(atom):
+    izero=(atom['lvl'][0])[0]
+    print(izero, ' izero')
+    j=(atom['bb'][0])[3]
+    j-=izero
+    print(j)
+    atom['bb'][3][:] = j
+    (atom['bb'][4])[:] -=izero
+    (atom['cbb'][2])[:] -=izero
+    (atom['cbb'][3])[:] -=izero
+    return atom
+    
+####################################################################################################
+def lvlrd(file,atom,ions):
+    conn=sqlite3.connect(file) 
+    conn.row_factory = sqlite3.Row
+    cur=conn.cursor()
+    res = cur.execute("SELECT * FROM lvl where atom= "+str(atom)+" and ion="+str(ions))
+    lvl=res.fetchall() 
+    print(lvl[1])
+    conn.close()
+    return lvl
+    
+####################################################################################################
+def bbrd(file,atom,ions):
+    conn=sqlite3.connect(file) 
+    conn.row_factory = sqlite3.Row
+    cur=conn.cursor()
+    res = cur.execute("SELECT * FROM bb where atom= "+str(atom)+" and ion="+str(ions))
+    bb=res.fetchall() 
+    conn.close()
+    return bb
+    
+####################################################################################################
+def cbbrd(file,lvl):
+    conn=sqlite3.connect(file) 
+    conn.row_factory = sqlite3.Row
+    cur=conn.cursor()
+
+    sb="SELECT * FROM cbb "
+    n=len(lvl)
+    for i in range(0,n):
+        s=" WHERE j= "+ str(lvl[i][0]) + ' OR  i= ' + str(lvl[i][0])
+        res = cur.execute(sb +  s) 
+        if i == 0:
+            cbb=res.fetchall()
+            print(np.shape(cbb)) # 85, 6
+            print(np.shape(cbb[0])) #6
+            print(cbb[0]) # first row  6 are entry, type, j, j, t, o
+        if i > 0:
+            cbb1=res.fetchall()
+            cbb+=cbb1
+    conn.close()
+    return cbb
+    
+####################################################################################################
+def tophysics(atom):
+    bcc=atom['cbb']
+    n=len(cbb)
+    for i in range(0,n):
+        t=ccb[i]['t']
+        o=ccb[i]['o']
+        t=np.frombuffer(t)
+        o=np.frombuffer(o)
+#    ccb=
+#    atom['bbb']=
+
+####################################################################################################
+def ltepop(e,g,ion,temp,nne):
+    #+ 
+    # 
+    # NAME: 
+    #       ltepop 
+    # 
+    # PURPOSE: 
+    #       Calculates LTE populations for the atom 
+    #-
+    nstar=e*0.; 
+    # 
+    hh=const()['hh']
+    em=const()['em']
+    ee=const()['ee']
+    cc=const()['cc']
+    pi=const()['pi']
+    bk=const()['bk']
+    rydinf=const()['rydinf']
+    #    
+    ev=(hh*cc*e)/ee
+    xxx = hh/np.sqrt(2.*pi*em/bk)
+    ccon=xxx*xxx*xxx/2.
+    conl=np.log(ccon*nne)-1.5*np.log(temp) 
+    sumn=1.0 
+    tns=ev*0.
+    glog = np.log(g) 
+    # 
+    # reduction of ionization potential 
+    #  Griem 1964 formula.
+    #
+    mn = min(ion) 
+    mx = max(ion) 
+    nk = len(ev)
+    for i in range(mn,mx): 
+        k = np.where(ion > i) 
+        nd = 1140.*i*(temp/1.e4/(nne/1.e10))**0.25 
+        ev[k] -= rydinf*i*i/nd/nd/ee 
+    tnsl = glog-glog[0]-ee/bk/temp*ev 
+    #
+    # now compute saha-boltzmann
+    #
+    for i in range(1,nk): 
+        if(ion[i] > ion[0]) : 
+            l=ion[i]-ion[0]
+            tnsl[i]=tnsl[i]-float(l)*conl 
+        tns[i]=np.exp(tnsl[i]) 
+        sumn=sumn+tns[i] 
+    # 
+    #
+    totn=1.
+    nstar[0]=totn/sumn 
+    nstar[1:nk]=tns[1:nk]*nstar[0] 
+    return  nstar
+        
+####################################################################################################
+def se(atom,te,ne):
+    hh=const()['hh']
+    cc=const()['cc']
+    pi=const()['pi']
+    lvl=atom['lvl']
+    l=np.array(lvl)
+    n=len(l)
+    ion=np.array(l[:,3],dtype=int)
+    e  =np.array(l[:,4],dtype=float)
+    g  =np.array(l[:,5],dtype=float)
+    nstar=ltepop(e,g,ion,te,ne)
+    #
+    #  build rate matrix and solution vector
+    #
+    lhs=ratematrix(atom,te,ne,nstar)
+    lhs[0,:]=1.
+    rhs = np.arange(0,n)*0.
+    rhs[0]=1.
+    n = np.linalg.solve(lhs,rhs)
+    #
+    # emission line cooefficients
+    #
+    trn=np.array(atom['bb'])
+    #
+    #  output upper level indices and emission line coefficients
+    #
+    w=trn[:,2]
+    w=np.double(w)
+    eps=w*0.    # hnu/4pi    
+    nup = np.int64(trn[:,3])
+    eps= hh*cc/w/4/pi * n[nup]
+    #
+    #  
+    #
+    return n, nstar, w, eps
+
+####################################################################################################
+def ratematrix(atom,te,ne,nstar):
+    hh=const()['hh']
+    cc=const()['cc']
+    em=const()['em']
+    ee=const()['ee']
+    pi=const()['pi']
+    bk=const()['bk']
+    lvl=atom['lvl']
+    l=np.array(lvl)
+    nl=len(l)
+    print(nl ,' level atom ')
+    lhs=np.eye(nl,dtype=float)*0.
+    #
+    # radiative rates, einstein A coefficients
+    #
+    trn=atom['bb']
+    trn=np.array(trn)
+    w=trn[:,2]  # wavelength of transition
+    #
+    nt=len(trn)
+    lindx=np.int64(l[:,0])
+    print('Radiation...')
+    for kr in range(0,nt):
+        t=np.array(trn[kr])
+        f=t[1]
+        wl_ang=t[2]
+        up=t[3]
+        lo=t[4]
+        typ=t[5]
+        #
+        # find levels associated with the transition
+        #
+        up= np.where(lindx == np.int64(up))
+        lo= np.where( lindx == np.int64(lo))
+        gu=float(l[up,5])
+        gl=float(l[lo,5])
+        gf=gl*float(f)
+        wl_ang=float(wl_ang)
+        a,bji,bij=bbcalc(gf,gu,gl,wl_ang,typ)
+        lhs[up,lo] +=a
+        #lhs[lo,up]+=0.  # no incident radiation
+        if(a < 0.): print('a ',a)
+    print('Radiation done')
+    #
+    # collisional rates, bound-bound first 
+    #
+    print('Collisions...')
+    col=atom['cbb']
+    col=np.array(col)
+    nt=len(col)
+    tl=np.log10(te)
+    cmn=8.63e-06 * ne * (1.e10) / np.sqrt(te)
+    for kc in range(0,nt):
+        if(kc % 1000 ==0): print(kc,'/',nt)
+        t=np.array(col[kc])
+        up=t[2]
+        lo=t[3]
+        temp=np.frombuffer(t[4])
+        omega=np.frombuffer(t[5])
+        #spl = CubicSpline(temp, omega, bc_type='natural')
+        #omega=spl(tl)
+        omega=np.interp(temp,omega,tl)
+        up= np.where( lindx == np.int64(up))
+        lo= np.where( lindx == np.int64(lo))
+        gu=float(l[up,5])
+
+        cdn= 8.63e-06 * ne * (omega/gu) / np.sqrt(te)
+        if(cdn < cmn): cmn=cdn
+        lhs[up,lo] +=cdn
+
+        cup= cdn*nstar[up]/nstar[lo]
+        lhs[lo,up] +=cup
+    print('Collisions done')
+    count=0
+    for i in range(0,nl):
+        lhs[i,i] = - (lhs[i,:]).sum()
+        # fix for zero collision rates
+        if(lhs[i,i] == 0.):
+            print(' adding collisions for zero-rate level ',i)
+            lhs[i,0]=cmn
+            lhs[0,i]=lhs[i,0]*nstar[i]/nstar[0]
+            lhs[i,i] = - (lhs[i,:]).sum()
+            count+=1
+    #
+    if(count > 0): print(count,' levels had zero rates')
+    for i in range (0,nl): print("{:9.2e}".format(lhs[1,i]))
+    return lhs.T
+
+####################################################################################################
+def bbcalc(gf,gu,gl,wl,typ):
+    #
+    # calculate parameters of transition from gf,g, etc.
+    #
+    c=const()
+    hh = const()['hh']
+    cc= const()['cc']
+    #
+    a=0.
+    bji=0.
+    bij=0.
+    #
+    #  type is dipole or quadrupole?
+    #
+    cc=const()['cc']
+    em=const()['em']
+    ee=const()['eesu']
+    pi=const()['pi']
+    wcm=wl/1.e8
+    c=8.* (pi * ee )**2 / (em*cc)   # a=c/lambda^2
+    if typ[1:2] == '1' or typ[0:2] == 'IC':
+        a=gf*c/gu/wcm/wcm
+        bji=wcm*wcm*wcm/(hh*cc*cc)
+        bij=bji*gu/gl
+    if typ[1:1] == 'F':
+        print(typ[1:1], ' otherwise forbidden transition- SET TO ZERO')
+        a=0.
+        bij=0.
+        bji=0.
+    if typ[1:2] == '2':
+        #print(typ[0:2], ' quadrupole transition- SET TO ZERO')
+        a=0.
+        bij=0.
+        bji=0.
+    return a, bji, bij
+
+####################################################################################################    

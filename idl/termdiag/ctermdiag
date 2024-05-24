@@ -1,0 +1,7 @@
+;
+; common block variables for termdiag procedures 
+;
+common termdiag,config,term,iconfig,iterm,iseries,evplot,positions, $
+  low_fine,low_group,idx,jdx,max_dx_line,max_dx_cont,directions,krcolor, $
+  top,bottom,term_label,kr_linestyle,lstring,tstring,whichtrans,$
+  c_label_space,c_label,c_arrow

@@ -1,0 +1,189 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Document name: trnrd.pro
+; Created by:    Randy Meisner, HAO/NCAR, Boulder, CO, January 14, 1997
+;
+; Last Modified: Fri Apr 13 13:35:09 2007 by judge (judge) on edlen.local
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+PRO trnrd, anum, inum, enidx=enidx
+;+
+;
+; PROJECT:
+;       HAOS-DIPER
+;
+; NAME:  trnrd     (procedure)
+;
+; PURPOSE:  To read transition data (oscillator strengths etc) 
+;           from the atomic database.
+;
+; CALLING SEQUENCE:
+;
+;       trnrd, anum, inum, [enidx=enidx] ([,help=help])
+;
+; INPUTS:
+;       anum - atomic number of the ion to be read from the database.
+;       inum - spectrum number of the ion to be read from the database.
+;
+;       (These inputs will over ride the optional enidx input.)
+;
+; OPTIONAL INPUTS: 
+;       enidx - an array of indicies of the energy values of the atom from the
+;               atomic energy database.  If given, inputs anum and
+;               inum are not necessary.
+;
+; OUTPUTS:
+;       Stores radiative data in catom common block variables.
+;
+; OPTIONAL OUTPUTS:
+;       None.
+;
+; KEYWORD PARAMETERS: 
+;       /help.  Will call doc_library and list header, and return
+;
+; CALLS:
+;       dbopen.pro, dbfind.pro, dbext.pro, dbclose.pro, dbget.pro.
+;
+; COMMON BLOCKS:
+;       Catom.
+;
+; RESTRICTIONS: 
+;       None.
+;
+; SIDE EFFECTS:
+;       None.
+;
+; CATEGORY:
+;       Part of the HAOS-DIPER database software.
+;
+; PREVIOUS HISTORY:
+;       Written January 14, 1997, by Randy Meisner, HAO/NCAR, Boulder, CO
+;
+; MODIFICATION HISTORY:
+;       
+; VERSION:
+;       Version 1, January 14, 1997
+;-
+;
+@cdiper
+IF(N_PARAMS() NE 2 AND N_ELEMENTS(enidx) EQ 0) THEN BEGIN
+  PRINT, 'Usage:  trnrd, anum, inum, [enidx=enidx] ([,help=help])'
+  RETURN
+ENDIF
+;
+oldnline = atom.nline
+;
+dbopen, 'atom_lvl'
+IF(N_ELEMENTS(enidx) EQ 0) THEN $
+   enidx = dbfind('atom=' + STRING(anum) + ',ion=' + STRING(inum), /silent)
+;
+IF(enidx(0) LE 0) THEN BEGIN
+   messdip, 'data for atom and ion are not in the lvl database.',/inf
+   trn = trndef
+   return
+ENDIF
+;
+;dbext,enidx,'label,g',label,g
+;
+label = lvl.label
+g = lvl.g
+;
+dbopen, 'atom_bb,atom_bib'  ; open for read only
+fidx = dbget('f_lab_i', enidx, /silent) ; finds bb indices with lvl indices enidx
+fjdx = dbget('f_lab_j', enidx, /silent)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 
+usr = get_user() &  usr = strlowcase(usr)
+IF(usr EQ 'judge') THEN BEGIN 
+   messdip,/inf,'User judge: MUST CHECK the matching code here & in isostr.pro'
+   messdip,/inf,'User judge: does this work in general???'
+ENDIF
+;
+; this loop finds places where the bb indices are identical
+;
+ok = 0l
+FOR i = 0,n_elements(fjdx)-1 DO BEGIN 
+   k = where(fidx EQ fjdx(i),coun)
+   IF(coun NE 0) THEN ok = [ok,k]
+ENDFOR
+ok = ok(1:*)
+if(n_elements(ok) ne n_elements(fidx)) then message, ' should be equal'
+fidx = fidx(ok)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+atom.nline = n_elements(fidx)
+;
+IF(fidx(0) LE 0) THEN BEGIN
+   messdip,/inf, ' No oscillator strengths found in bb database'
+ENDIF ELSE BEGIN
+   dbext, fidx, 'f_lab_i, f_lab_j, f, wl, bib_ref',filab, fjlab, f, alamb, ref
+   dbclose
+
+   dbopen,'atom_lvl'
+   dbext,filab,'label,tjp1,e',ilab,ij,ei
+   dbext,fjlab,'label,tjp1,e',jlab,jj,ej
+   dbclose
+   ;
+   ; get TRN.* variables 
+   ;
+   trn = replicate(trndef,atom.nline)
+   trn.f = f
+   trn.ref = ref
+   trn.alamb = alamb
+;
+;   May 1 2022.  Get trn.irad, jrad, a, bji, bij
+;   
+;  level energies of lower levels, upper, and all levels
+;  converted and rounded to integer values of inverse cm
+   
+   ei=strcompress(string(nint(ei,/long)),/remove_all)
+   ej=strcompress(string(nint(ej,/long)),/remove_all)
+
+   e=nint(long(lvl.ev*ee/hh/cc))
+   e=strcompress(string(e),/remove_all)
+;
+; try floats                               ;
+;
+   form='(f16.2)'
+   ei=strcompress(string(ei,format=form),/remove_all)
+   ej=strcompress(string(ej,form=form),/remove_all)
+
+   e=strcompress(string(e,form=form),/remove_all)
+
+;
+; ilab is a unique label, the label string plus the energy in  cm-1
+   ilab= strcompress(ilab,/remove_all)+' '+strcompress(string(ij),/remove_all) + ' '+ ei
+
+   jlab= strcompress(jlab,/remove_all)+' '+strcompress(string(jj),/remove_all) + ' '+ ej
+
+   llabel=strcompress(lvl.label,/remove_all) +' '+ strcompress(string(lvl.tjp1),/remove_all)+ ' '+ e
+
+   for kr=0,n_elements(fidx)-1 do begin
+      
+      i=where(ilab[kr] eq llabel,ni)
+      j=where(jlab[kr] eq llabel,nj)
+      if(ni ne 1 or nj ne 1) then begin
+         print,'warning, levels in atom_bb and atom_lvl are not unique'
+         print,ilab[kr]
+         print,jlab[kr]
+;         stop
+         goto,skip
+      endif
+
+      trn[kr].irad = i
+      trn[kr].jrad = j
+      trn[kr].a=trn[kr].f*6.6702e15*g[i]/[g[j]*trn[kr].alamb*trn[kr].alamb]
+      trn[kr].bji=[trn[kr].alamb]*[trn[kr].alamb]*[trn[kr].alamb]*trn[kr].a/hc2
+      trn[kr].bij=trn[kr].bji*g[j]/g[i]
+
+      skip:
+   endfor
+      
+ENDELSE
+
+atom.nrad = atom.nrad+(atom.nline-oldnline)
+;
+RETURN
+END
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; End of 'trnrd.pro'.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

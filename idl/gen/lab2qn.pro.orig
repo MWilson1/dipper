@@ -1,0 +1,128 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Document name: lab2qn.pro
+; Created by:    Philip Judge, March 8, 2006
+;
+; Last Modified: Fri Jul 28 16:43:26 2006 by judge (judge) on edlen.local
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+FUNCTION lab2qn,energy,g,label,ion,ref
+;
+@cdiper   
+up = 'SPDFGHIJKLMNOPQRSTUVXYZ'
+nup = STRLEN(up)
+lo = STRLOWCASE(up)
+level = lvldef(0)
+level.ev = energy
+level.g = g
+level.label = label
+level.ion = ion
+level.ref = ref
+;
+labsplit,label,conf,mult,par,L,J,parent=parent,coupling = coupling
+;
+;  parity and multiplicity come straight from labsplit
+;
+level.parity = par
+level.tsp1 = fix(mult)
+level.coupling = coupling
+level.glande = 0.
+level.eff = -1.
+;
+;   
+CASE (level.coupling) OF
+   'LS': BEGIN 
+      ss = STRMID(L,0,1)
+      level.bigl = STRPOS(up,ss) 
+      sss = 0.5*(level.tsp1-1.)
+      lll = float(level.bigl)
+      jjj = 0.5*(level.g-1.)
+      level.glande = glan_ls(sss,lll,jjj)
+   END
+   'JJ': BEGIN                  ; term string is (j1, j2)
+      ss = mult+' '+L
+      j1 = getwrd(ss) &  j2 = getwrd(ss,1) 
+      g1 = fix(jtog(j1)) &  g2 = fix(jtog(j2))
+      level.tsp1 = g1        ; set to 2j1+1 and 2j2+1 to make them integers
+      level.bigl = g2
+   END
+   'PAIR': BEGIN                ; term string is 2s+1[rest]
+      level.tsp1 = fix(mult) ; set to 2s1+1 and 2t+1 to make them integers
+      level.bigl = fix(jtog(L))
+   END
+   ELSE: message,'coupling scheme '+lvlv(k).coupling+' is unknown'
+ENDCASE                         ;
+;
+; find number of active electrons from configuration string
+;   
+conf = STRUPCASE(STRTRIM(conf,2))
+;
+;  first, get last word
+;   
+IF(level.term2 NE 0) THEN delim = ')' ELSE delim = ' '
+lconf = getwrd(conf,/last,delim = delim)
+ls = STRLEN(lconf)
+;   
+;  find position of 'SPDF...' in string lconf.  All to right is then 
+;  the number of active electrons, all to left is principal QN. if position is
+;  the length of the string then set active to 1
+;   
+; original
+;FOR jj = 0,ls-1 DO BEGIN 
+;   pos = STRPOS(up,STRMID(lconf,jj,1)) 
+;   IF(pos NE -1) THEN BEGIN
+;      level.smalll = pos
+;;      GOTO, contt
+;   ENDIF
+;ENDFOR
+; new July 6, 2006, start from rhs
+; 
+lpos = 0
+FOR jj = 0,ls-1 DO BEGIN 
+   ii = strpos(up,STRMID(lconf,jj,1))
+   IF(ii NE -1) THEN BEGIN
+      lpos = [lpos,jj]
+   ENDIF
+ENDFOR
+lpos = lpos(1:*)  ; contains the positions of bigl values
+;
+FOR jj = ls-1,0,-1 DO BEGIN 
+   pos = STRPOS(up,STRMID(lconf,jj,1)) 
+   IF(pos NE -1) THEN BEGIN
+      level.smalll = pos
+      GOTO, contt
+   ENDIF
+ENDFOR
+;
+message,'cannot decode label '+lab(k)+': execution stopped'
+contt:
+IF(jj EQ ls-1) THEN level.active = 1 ELSE level.active = $
+   FIX(STRMID(lconf,jj+1,ls-jj-1) )
+;
+nl = n_elements(lpos)
+IF(nl EQ 1) THEN BEGIN 
+   level.n = FIX(STRMID(lconf,0,jj) )
+ENDIF ELSE BEGIN 
+; accounts for cases like '3p10d', as in OP data
+; search for the start and length of string
+;
+   start = lpos(nl-2)+1 & length = lpos(nl-1)-lpos(nl-2)-1
+   level.n = FIX(STRMID(lconf,start,length) )
+endelse
+;
+;  get J quantum number
+;   
+pp = STRPOS(j,'/')
+IF(pp NE -1) THEN BEGIN
+   upp = FIX(getwrd(j,0,0,delim = '/'))
+   loo = FIX(getwrd(j,1,1,delim = '/'))
+   level.tjp1 = 1 + upp*2/loo
+ENDIF ELSE BEGIN
+   level.tjp1 = 2*FIX(j)+1
+ENDELSE
+return,level
+END
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; End of 'lab2qn.pro'.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
