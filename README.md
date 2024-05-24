@@ -1,4 +1,4 @@
-[![github](https://img.shields.io/badge/any_text-you_like-blue)](https://articles.adsabs.harvard.edu/pdf/1994ESASP.373...67J)
+[![github](https://img.shields.io/badge/NASA%20ADS-1994ESASP.373...67J-red)](https://articles.adsabs.harvard.edu/pdf/1994ESASP.373...67J)
 
 # HAOS-DIPER: HAO Spectral DIagnostic Package for Emitted Radiation
 
