@@ -1,6 +1,0 @@
-COMMON se1, temp, nne, lscale, vturb, nh, nhe, totn, nstar, n, incfunc, jinc
-common se2, emiss, nrb, pesc, dpesc, matrix, tauq, rij, rji, c,type,recx
-common se3, wcont,econt 
-;common catmos,grav,cmass,rho,vel,tau,xcont,scat,xnorm,height,atmoid,dpid,dptype
-common gencol, nozeror, newcol, told, nold, cold, nspl,spl, idata, jspl
-;
