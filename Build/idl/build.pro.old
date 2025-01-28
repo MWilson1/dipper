@@ -1,0 +1,104 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Document name: make_diper.pro
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+@cdiper
+dipdef
+!priv=2
+dbcreate, 'atom_bb', 1, 1, /external
+dbcreate, 'atom_bf', 1, 1, /external
+dbcreate, 'atom_cbb', 1, 1, /external
+dbcreate, 'atom_lvl', 1, 1, /external;
+dbcreate, 'atom_bib', 1, 1, /external;
+;
+;  NIST data, neutrals only
+;
+pwd = concat_dir(getenv('DIPER'),'build')
+pwd = concat_dir(pwd,'neutrals')
+pwd = concat_dir(pwd,'nist')
+;
+diper,reg = 2 ; no collisional data 
+;
+;   All elements up to Z=30
+;
+n = 1+indgen(30)
+names = strlowcase(atomn(n))
+;
+;  1.   NIST data for neutrals
+;
+
+
+
+nistref = 'NIST Atomic Spectral Database'
+openw,lu,/get,'trashed_levels'
+
+goto,skipped
+
+FOR i = 0,n_elements(names)-1 DO BEGIN 
+   j = 1
+   IF(n(i) EQ 7) THEN GOTO, skippety
+   fil = 'atom.'+names(i)+strtrim(string(j),2)
+   fil = concat_dir(pwd,fil)
+   file = findfile(fil)
+   IF file NE '' THEN BEGIN
+      print,'doing ',fil
+      atomrd,file,/nocheck,ok = ok
+      k = where(hdr.key EQ 'ENERGIES' OR hdr.key EQ 'GFS-REF',c)
+      hdr(k).text = nistref
+      bad = where(ok EQ 0,nbad)
+      IF(nbad GT 0) THEN BEGIN
+         FOR ib = 0,nbad-1 DO BEGIN
+            ibad = bad(ib)
+            printf,lu,atom.atomid,' ',lvl(ibad).ion,' ',lvl(ibad).label
+            print,atom.atomid,' ',lvl(ibad).ion,' ',lvl(ibad).label
+         endfor
+         level,del = bad
+      ENDIF
+      atom2db
+   ENDIF ELSE BEGIN 
+      print,'skipping ',fil
+   ENDELSE
+skippety:
+ENDFOR
+;
+;  chianti data
+;
+skipped:
+diper,reg = 0,app = 0
+pwd = concat_dir(getenv('PYDIPER'),'build')
+pwd = concat_dir(pwd,'final_atoms')
+;
+; loop over ions
+;
+
+FOR i = n_elements(names)-1,0,-1 DO BEGIN 
+   FOR j = 1,n(i) DO BEGIN 
+      fil = 'atom.'+names(i)+strtrim(string(j),2)
+      fil = concat_dir(pwd,fil)
+      file = findfile(fil)
+      IF file NE ''  THEN BEGIN
+         print,'doing ',fil
+         atomrd,file,/nocheck,ok = ok
+         bad = where(ok EQ 0,nbad)
+         IF(nbad GT 0) THEN BEGIN
+            FOR ib = 0,nbad-1 DO BEGIN
+               ibad = bad(ib)
+               printf,lu,atom.atomid,' ',lvl(ibad).ion,' ',lvl(ibad).label
+               print,atom.atomid,' ',lvl(ibad).ion,' ',lvl(ibad).label
+            endfor
+            level,del = bad
+         ENDIF
+         atom2db
+      ENDIF ELSE BEGIN 
+         print,'skipping ',fil
+      ENDELSE
+   ENDFOR
+ENDFOR
+free_lun,lu
+;bfbuild,/doit
+END
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; End of 'make_diper.pro'.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

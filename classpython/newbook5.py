@@ -1,0 +1,171 @@
+####################################################################################################
+# Plot isoelectronic sequence of other ions
+####################################################################################################
+import dippy as dp
+import numpy as np
+from matplotlib import pyplot as plt
+import time
+import subprocess
+import platform
+from astropy.io import ascii
+from scipy.interpolate import CubicSpline
+
+figure, axis = plt.subplots(3, 2,figsize=(10,11))
+
+col=['r','b','y']
+
+dippy_regime=0  # coronal
+
+iseq=-1
+for sequence in (np.array([6,7],int)):   # loop over sequence
+    iseq+=1
+    atoms = np.arange(sequence,30)
+
+    atom=dp.diprd(sequence,1,False)
+    lvl=atom['lvl']
+    print(lvl[0].keys())
+    llab=dp.uniqlev(lvl,1)
+    if(sequence == 7): llab=dp.uniqlev(lvl,0)
+    ulab=[dp.uniqlev(lvl,3),dp.uniqlev(lvl,6),dp.uniqlev(lvl,7)]
+    llab0=llab=lvl[1]['label']
+    if(sequence == 7): llab0=lvl[0]['label']
+    ulab0=[lvl[3]['label'],lvl[6]['label'],lvl[7]['label']]
+    print('USE FOLLOWING UPPER LEVELS')
+    print(ulab, '  TO LOWER LEVEL  ',llab)
+
+    atoms = np.arange(sequence,30)
+
+######################################################################
+#   Collision strength plot
+######################################################################
+
+    const=1.
+    kount=-1
+    for uab in ulab:
+        kount+=1
+        out= atoms*0  +np.nan
+        outt=out*0.
+        count=-1
+        for at in range(sequence+1,30):
+            count+=1
+            ion= at-sequence+1
+            atom=dp.diprd(at,ion,False)
+            if(atom['ok'] == True):
+            
+                tl, omega = dp.matchcol(atom,llab,uab)
+                out[count]=omega
+                outt[count]=tl
+                            
+        use= np.logical_not(np.isnan(out))
+
+        axis[0,iseq].plot(atoms[use]+1,out[use]*const, col[kount]+'.-',label=llab+' -- '+uab)
+        axis[0,iseq].set_yscale('log')
+        axis[0,iseq].set_ylabel(r'$\Upsilon(T_e)$ ')
+        axis[0,iseq].set_xticks(atoms[::2])
+        axis[0,iseq].set_xticklabels(atoms[::2], fontsize=10)
+        axis[0,iseq].set_title(r"Collision strengths of "+
+                               dp.atomname(sequence)+' sequence',fontsize=9)
+        axis[0,iseq].legend(fontsize=8)
+    
+######################################################################
+#   Oscillator strength plot
+######################################################################
+
+    const=1.
+    kount=-1
+    for ul in ulab:
+        kount+=1
+        out= atoms*0  +np.nan
+        outt=out*0.
+        count=-1
+        for at in range(sequence+1,30):
+            count+=1
+            ion= at-sequence+1
+            atom=dp.diprd(at,ion,False)
+            if(atom['ok'] == True):
+                f = dp.matchf(atom,llab,ul)
+                out[count]=f
+
+        use= np.logical_not(np.isnan(out))
+        axis[1,iseq].plot(atoms[use]+1,out[use]*const, col[kount]+'.-',label=llab+' -- '+ul.strip())
+    axis[1,iseq].set_yscale('log')
+    axis[1,iseq].set_ylabel(r'$f_{ABS}$ ')
+    axis[1,iseq].set_xticks(atoms[::2])
+    axis[1,iseq].set_xticklabels(atoms[::2], fontsize=10)
+    axis[1,iseq].set_title(r"Oscillator strengths of "+dp.atomname(sequence)+' sequence',fontsize=9)
+    axis[1,iseq].legend(fontsize=8)
+    axis[1,iseq].set_ylim([1.e-7, 1.])
+        
+    
+######################################################################
+#   Energy level plot
+######################################################################
+
+######################################################################
+#  ionization potential
+    out= atoms*0  +np.nan
+    count=-1
+    coli='g'
+    for at in range(sequence+1,30):
+        count+=1
+        ion= at-sequence+1
+        atom=dp.diprd(at,ion,False)
+        out[count]=dp.ipotl(at,ion)
+        use= np.logical_not(np.isnan(out))
+
+
+    axis[2,iseq].plot(atoms[use]+1,out[use]*const, coli+'.-',label='IP')
+    axis[2,iseq].set_yscale('log')
+    axis[2,iseq].set_xlabel('Atomic number A')
+    axis[2,iseq].set_ylabel('Level energy eV  ')
+    axis[2,iseq].set_xticks(atoms[::2])
+    axis[2,iseq].set_xticklabels(atoms[::2], fontsize=10)
+    axis[2,iseq].set_title(r"Level energy eV"
+                           +dp.atomname(sequence)+' sequence',fontsize=9)
+######################################################################
+
+        
+    const= 100. * dp.const()['hh'] * dp.const()['cc']        / dp.const()['ee'] 
+    kount=-1
+    for ul in ulab:
+        kount+=1
+        out= atoms*0  +np.nan
+        outt=out*0.
+        count=-1
+        for at in range(sequence+1,30):
+            count+=1
+            ion= at-sequence+1
+            atom=dp.diprd(at,ion,False)
+            e=np.nan
+            done=0
+            if(atom['ok'] == True and done ==0):
+                lvl=atom['lvl']
+                for il in range(0,len(lvl)):
+                    if(done == 0):
+                        if( lvl[il]['label'].strip() == ul.strip()):
+                            e=lvl[il]['e']
+                            out[count]=e*const
+                            done=1
+
+        use= np.logical_not(np.isnan(out))
+        axis[2,iseq].plot(atoms[use]+1,out[use]*const, col[kount]+'.-',label=ul)
+        axis[2,iseq].set_yscale('log')
+        axis[2,iseq].set_xticks(atoms[::2])
+        axis[2,iseq].set_xticklabels(atoms[::2], fontsize=10)
+        axis[2,iseq].set_title(r"Level energies of "+dp.atomname(sequence)+' sequence',fontsize=9)
+        axis[2,iseq].legend(fontsize=8)
+
+
+
+
+        
+################################################################################
+
+plt.savefig('figisos67.png')
+plt.close()
+subprocess.run(["open", "figisos67.png"]) 
+    
+quit()
+
+                    
+
