@@ -1,0 +1,75 @@
+
+
+
+
+
+    for im in um:
+        k=np.asarray(im == m).nonzero()
+        #k=np.asarray(k).squeeze()
+        print('here')
+        print('k ',k)
+        print('k ',type(k), len(k))
+        if im % 1 == 0: print('im = ', im, ' # lines ',len(k), type(k), k)
+        upper=[]
+        lower=[]
+        for ik in range(len(k)):
+            upper.append(bb[ik]['j'])
+            upper.append(bb[ik]['i'])
+        print('UPPER  ', upper)
+        print('UPPER  ', type(upper))
+        #for ik in k:
+            
+    return 0
+
+
+
+
+#        
+#   FOR j = 0,n_elements(upper)-1 DO BEGIN 
+#      u = upper(j)
+#      FOR i = 0,n_elements(lower)-1 DO BEGIN 
+#         l = lower(i)
+#         IF(u EQ l) THEN GOTO, skip
+#         str = strcompress(lvl(u).label+'-'+lvl(l).label)
+##
+## now compute transitions allowed by dipole sel rules
+## for lines (E1, M1) and continua   
+##
+#         sum = lvl(u).g+lvl(l).g
+#         dif = abs(lvl(u).g-lvl(l).g)
+#         k = where(trn.jrad EQ u AND trn.irad EQ l,count)
+#         IF(count GT 0) THEN GOTO,skip
+#         signal = 0b
+#         CASE (type) OF
+#            'E1': signal =  sum gt 2 and dif le 2
+#            'IC': signal =  sum gt 2 and dif le 2
+#            'M1': signal =  sum gt 2 and dif le 2
+#            'E2': signal =  sum gt 4 and dif le 4
+#            'M1E2': signal = sum gt 4 and dif le 4
+#            'BF': BEGIN
+#               gu =  lvl(u).g*2  # for outgoing electron
+#               sum = gu+lvl(l).g
+#               dif = abs(gu-lvl(l).g)
+#               signal = sum gt 2 and dif le 2
+#            end
+#            ELSE:
+#         ENDCASE
+#         IF(signal) THEN BEGIN 
+##            messdip,/inf,'missing '+type+' trans. '+str
+#            new = trndef
+#            new.type = type
+#            new.irad = l
+#            new.jrad = u
+#            new.ref = 'Missing transition'
+#            new.f = 0.
+#            de = abs(lvl(u).ev-lvl(l).ev)
+#            new.alamb = hh*cc*1.e8/(ee*de)
+#            new.multnum = trn(use).multnum
+#            misstrn = [misstrn,new]
+#         endif
+#         skip:
+#      ENDFOR
+#   ENDFOR
+#
+#
+#    return

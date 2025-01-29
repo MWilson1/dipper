@@ -1,0 +1,42 @@
+     The solar spectra on the enclosed floppy disk are written in
+ASCII in the form of two columns, the first being the wavelength
+in Angstroms and the second the solar irradiance in photons cm-2
+s-1 A-1.
+
+     The instrument used had two detectors in the focal plane,
+one giving the spectrum in 0.1 A resolution and the other in 1.0
+A resolution, both with a wavelength step increment of .02 A. 
+
+     The measurements given in file 78TNTH83 were made in 0.1 A
+resolution.  The step presented in the data here is 0.1 A,
+obtained by block averaging over 5 samples in the raw data to
+make the data set more manageable.  In a comparison of the
+finished product with the raw spectrum it appears that no
+significant compromise of the true spectrum has resulted.  For
+wavelengths from 2000 A to 2077.4 A, the spectrum from the 1983
+measurement has been used.  For 2077.5 A to 3100 A the 1978
+flight data were used.
+
+     The spectrum in file AFGL83 is all from the 1983 flight, and
+is in 1.0 A resolution, presented here with a step of 0.5 A.  For
+wavelengths up to and including 2371.5 A the measurements were
+made in 0.1 A resolution and degraded to 1.0 A resolution by
+smoothing;  at all longer wavelengths the measurements were made
+in 1.0 A resolution.
+
+     The measurements were made from a balloon near 40 km and
+have been extrapolated to zero optical depth by correcting for
+ozone, O2 Herzberg continuum absorption,  and Rayleigh
+scattering.  No correction has been made for Schumann-Runge
+absorption, so there remains some slight signature from the 0-0
+and 1-0 bands of that system near 2000 A and 2025 A,
+respectively.
+
+     References:
+
+     Anderson, G. P., and L. A. Hall, Solar irradiance between
+2000 and 3100 Angstroms with spectral bandpass of 1.0 Angstroms,
+J. Geophys. Res., vol 94, pp 6435-6441, 1989.
+     Hall, L. A., and G. P. Anderson, High resolution solar
+spectrum between 2000 and 3100 Angstroms, J. Geophys, Res., in
+press.
