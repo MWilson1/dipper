@@ -444,7 +444,7 @@ class dippyClass:
         hh=dippyClass.hh
         bk=dippyClass.bk
         ryd=dippyClass.rydinf/hh/cc
-        z=ion-1
+        z=ionnum-1
         iea=0 # default
         isoel=iel-z
         cea=0.
@@ -985,7 +985,7 @@ class dippyClass:
             res = cur.execute(sstr)
             lvlnext=res.fetchone()
             if(lvlnext != None):
-                ipot=self.ipotl(ionnum)
+                ipot=self.ipotl(ions)
                 lvlnext['e']+= ipot * dippyClass.ee / dippyClass.hh / dippyClass.cc
                 lvlnext['meta']=1
                 lvl.append(lvlnext) 
