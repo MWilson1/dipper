@@ -15,19 +15,19 @@ from astropy.io import ascii
 
 
 
-atom=dp.diprd(1,1,False) 
-lvl=atom['lvl']
+diprd_init=dp.diprd(1,1,False) 
+lvl=diprd_init.atom['lvl']
 for i in range(0,len(lvl),1000):
     print(i,lvl[i]['label'])
 print('LEN ',len(lvl))
 
-lvl=atom['lvl']
+lvl=diprd_init.atom['lvl']
 nl=len(lvl)
 
 ne=1.e11
 te=70000.
 lhs=np.zeros((nl,nl),float)
-n,nstar,w,e,lhs=dp.se(atom,te,ne)
+n,nstar,w,e,lhs=diprd_init.se(te,ne)
 
 
 lhs=np.loadtxt('ctab.dat')
@@ -43,6 +43,7 @@ plt.xlabel('Level index')
 plt.ylabel('Level index')
 plt.title(r"C+ to C4+ log rate matrix sec$^{-1}$")
 plt.savefig('demo3c.png')
+plt.show()
 plt.close()
 
 lhs=np.loadtxt('htab.dat')
@@ -56,9 +57,10 @@ plt.xlabel('Level index')
 plt.ylabel('Level index')
 plt.title("Hydrogen log rate matrix sec$^{-1}$")
 plt.savefig('demo3h.png')
+plt.show()
 
-subprocess.run(["open", "demo3h.png"]) 
-subprocess.run(["open", "demo3c.png"]) 
+#subprocess.run(["open", "demo3h.png"]) 
+#subprocess.run(["open", "demo3c.png"]) 
 
 
 ####################################################################################################

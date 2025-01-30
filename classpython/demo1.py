@@ -12,7 +12,8 @@ import dippy as dp
 
 ions=np.arange(5,dtype=int)+2
 print('ions ',ions)
-atom=dp.diprd_multi(6,ions) 
+diprd_multi_init = dp.diprd_multi(6,ions)
+atom=diprd_multi_init.atom
 #atom=diprd(6,2,False) 
 
 
@@ -21,9 +22,9 @@ for i in range(0,len(lvl),1000):
     print(i,lvl[i]['label'])
 print('LEN ',len(lvl))
 
-atom=dp.redatom(atom,lowestn=True)
+atom=diprd_multi_init.redatom(lowestn=True)
 bb=atom['bb']
-a=dp.check(atom)
+#a=diprd_multi_init.check()
 
 lvl=atom['lvl']
 nl=len(lvl)
@@ -41,7 +42,7 @@ for tl in range(k,l,delta):
     count+=1
     te=10.**(tl/100.0)
     #print(' T  n  ', te,ne)
-    n,nstar,w,e=dp.se(atom,te,ne)
+    n,nstar,w,e, lhs=diprd_multi_init.se(te,ne)
     nout[count,:]=n
     if count ==3:
         eout=e
@@ -75,9 +76,10 @@ plt.xlim(np.min(tlog),np.max(tlog))
 plt.xlabel('Log10 T')
 plt.ylabel('Carbon ions: relative level population')
 plt.savefig('demo1.pdf')
+plt.show()
 
 print(tlog)
-subprocess.run(["open", "demo1.pdf"]) 
+#subprocess.run(["open", "demo1.pdf"]) 
 
 print('Te Ne used  ',np.log10(te),np.log10(ne))
 ####################################################################################################

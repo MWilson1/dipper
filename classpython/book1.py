@@ -18,7 +18,7 @@ sequence=5
 atoms = np.arange(sequence,30)
 levellab=['2S 2P2 2PE 3/2','2S 2P 3P 2PE 3/2']
 
-const = dp.const()['hh'] * dp.const()['cc'] / dp.const()['ee']
+const = dp.dippyClass.hh * dp.dippyClass.cc / dp.dippyClass.ee
 #const=1.
 col=['r','b']
 kount=-1
@@ -30,9 +30,9 @@ for lab in levellab:
     for at in range(sequence+1,30):
         count+=1
         ion= at-sequence+1
-        atom=dp.diprd(at,ion,False)
+        atom=dp.diprd(at,ion,False).atom
         if(atom['ok'] == True): 
-            print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
+            print('   PLOTTING  ',at,'   ', dp.dippyClass.atomname(at), ion)
             lvl=atom['lvl']
             nl=len(lvl)
             for il in range(0,nl,1):
@@ -45,7 +45,7 @@ for lab in levellab:
     plt.xlabel('Atomic number Z')
     plt.ylabel('Level energy')
     plt.xticks(atoms)
-    plt.title(r" levels of "+dp.atomname(sequence)+' sequence, ground state 2S2 2P 2P0 1/2')
+    plt.title(r" levels of "+dp.dippyClass.atomname(sequence)+' sequence, ground state 2S2 2P 2P0 1/2')
     plt.legend()
 
 #
@@ -53,10 +53,11 @@ for lab in levellab:
 #
 
 
+plt.show()
 plt.savefig('fig_isos51.png')
 plt.close()
 # 
-subprocess.run(["open", "fig_isos51.png"]) 
+#subprocess.run(["open", "fig_isos51.png"]) 
 
 
 levellab=['2S 2P2 4PE 3/2','2S 2P2 2PE 3/2','2S 2P 3P 2PE 3/2']
@@ -75,9 +76,9 @@ for lab in levellab:
     for at in range(sequence+1,30):
         count+=1
         ion= at-sequence+1
-        atom=dp.diprd(at,ion,False)
+        atom=dp.diprd(at,ion,False).atom
         if(atom['ok'] == True): 
-            print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
+            print('   PLOTTING  ',at,'   ', dp.dippyClass.atomname(at), ion)
             lvl=atom['lvl']
             nl=len(lvl)
             for il in range(0,nl,1):
@@ -90,12 +91,14 @@ for lab in levellab:
     plt.xlabel('Atomic number Z')
     plt.ylabel('Level lifetime ')
     plt.xticks(atoms)
-    plt.title(r"Energy level lifetimes of "+dp.atomname(sequence)+' sequence')
+    plt.title(r"Energy level lifetimes of "+dp.dippyClass.atomname(sequence)+' sequence')
     plt.legend()
 
+
 plt.savefig('fig_isos52.png')
+plt.show()
 plt.close()
-subprocess.run(["open", "fig_isos52.png"]) 
+#subprocess.run(["open", "fig_isos52.png"]) 
 
 #
 # collision strengths
@@ -114,9 +117,9 @@ for lab in levellab:
     for at in range(sequence+1,30):
         count+=1
         ion= at-sequence+1
-        atom=dp.diprd(at,ion,False)
+        atom=dp.diprd(at,ion,False).atom
         if(atom['ok'] == True): 
-            print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
+            print('   PLOTTING  ',at,'   ', dp.dippyClass.atomname(at), ion)
             lvl=atom['lvl']
             nl=len(lvl)
             for il in range(0,nl,1):
@@ -129,10 +132,11 @@ for lab in levellab:
     plt.xlabel('Atomic number Z')
     plt.ylabel('Level lifetime ')
     plt.xticks(atoms)
-    plt.title(r"Energy level lifetimes of "+dp.atomname(sequence)+' sequence')
+    plt.title(r"Energy level lifetimes of "+dp.dippyClass.atomname(sequence)+' sequence')
     plt.legend()
 
+plt.show()
 plt.savefig('fig_isos52.png')
 plt.close()
 
-subprocess.run(["open", "fig_isos52.png"])
+#subprocess.run(["open", "fig_isos52.png"])
