@@ -69,7 +69,7 @@ plt.ylabel('Jungfraujoch brightness')
 
 boundonly=True
 #atom=dp.diprd(26,1,boundonly)
-diprd_init=dp.diprd(26,1,boundonly, dippy_regime=dippy_regime, dippy_approx=dippy_approx)
+diprd_init=dp.diprd(26,1,boundonly, dippy_regime=dippy_regime, dippy_approx=dippy_approx) # debug, not sure why this doesn't have any levels in the lvlrd
 atom = diprd_init.atom
 lvl=atom['lvl']
 #print(lvl[0])
