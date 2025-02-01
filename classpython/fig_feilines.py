@@ -26,22 +26,27 @@ print('       where  XXX is, e.g., regime, approx, dbdir')
 print()
 dippy_regime=2
 dippy_approx=0
-dippy_dbdir='/Users/judge/pydiper/dbase/'
-dippy_spdir='/Users/judge/pydiper/spectra/'
+#dippy_dbdir='/Users/judge/pydiper/dbase/'
+#dippy_spdir='/Users/judge/pydiper/spectra/'
+dippy_dbdir='../dbase/'
+dippy_spdir='../spectra/'
 os=platform.system()
 if(os == 'Linux'):
     print(os)
-    dippy_dbdir='/home/judge/pydiper/dbase/'
-    dippy_spdir='/home/judge/pydiper/spectra/'
+    #dippy_dbdir='/home/judge/pydiper/dbase/'
+    #dippy_spdir='/home/judge/pydiper/spectra/'
+    dippy_dbdir='../dbase/'
+    dippy_spdir='../spectra/'
 #
 np.set_printoptions(precision=2)
 plt.rcParams["figure.figsize"] = (9,6)
 plt.rcParams.update({'font.size': 11})
 
 
-x=dp.diplist('c')
-#x=dp.diplist('o')
-#x=dp.diplist('fe')
+x=dp.dippyClass.diplist('c')
+#x=dp.diplist('c')
+##x=dp.diplist('o')
+##x=dp.diplist('fe')
                
 print()
 print('Reading BASS spectrum ')
@@ -63,11 +68,14 @@ plt.xlabel('Wavelength angstrom')
 plt.ylabel('Jungfraujoch brightness')
 
 boundonly=True
-atom=dp.diprd(26,1,boundonly)
+#atom=dp.diprd(26,1,boundonly)
+diprd_init=dp.diprd(26,1,boundonly, dippy_regime=dippy_regime, dippy_approx=dippy_approx) # debug, not sure why this doesn't have any levels in the lvlrd
+atom = diprd_init.atom
 lvl=atom['lvl']
 #print(lvl[0])
 
-bb=dp.bbdata(atom)
+#bb=dp.bbdata(atom)
+bb=diprd_init.bbdata()
 bbold=bb
 
 print()
@@ -76,21 +84,24 @@ print('lvl ', type(lvl))
 print('bb ',type(bb))
 print()
 print(len(bb), 'bef')
-#if(lam == 6302): bb=missing.missing(atom)
-bb=missing.missing(atom)
+##if(lam == 6302): bb=missing.missing(atom)
+#bb=missing.missing(atom)
+bb=diprd_init.missing()
 print(len(bb), 'aft')
 print(' MISSING:')
 
 
 atom['bb']=bb
 
-x=dp.specid(atom)
+#x=dp.specid(atom)
+x=diprd_init.specid()
 
-
+plt.show()
 plt.savefig(file+'.pdf')
-subprocess.run(["open", file+".pdf"]) 
+#subprocess.run(["open", file+".pdf"]) 
 
 print()
 print('LAST EDIT DEC 15 2024 PGJ')
 
-    
+
+
