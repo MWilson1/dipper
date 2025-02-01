@@ -22,7 +22,9 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
     atoms = np.arange(sequence,30)
 
 
-    atom=dp.diprd(sequence,1,False)
+    #atom=dp.diprd(sequence,1,False)
+    diprd_init=dp.diprd(sequence,1,False, dippy_regime=dippy_regime)
+    atom = diprd_init.atom
     lvl=atom['lvl']
 
 
@@ -52,10 +54,13 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         for at in range(sequence+1,30):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            #atom=dp.diprd(at,ion,False)
+            diprd_init=dp.diprd(at,ion,False, dippy_regime=dippy_regime)
+            atom = diprd_init.atom
             if(atom['ok'] == True):
             
-                tl, omega = dp.matchcol(atom,llab,uab)
+                #tl, omega = dp.matchcol(atom,llab,uab)
+                tl, omega = diprd_init.matchcol(llab,uab)
                 out[count]=omega
                 outt[count]=tl
                             
@@ -69,7 +74,7 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         axis[0,iseq].set_xticks(atoms[::2])
         axis[0,iseq].set_xticklabels(atoms[::2], fontsize=10)
         axis[0,iseq].set_title(r"Collision strengths of "+
-                               dp.atomname(sequence)+' sequence',fontsize=9)
+                               dp.dippyClass.atomname(sequence)+' sequence',fontsize=9)
         axis[0,iseq].legend(fontsize=8)
     
 ######################################################################
@@ -86,12 +91,15 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         for at in range(sequence+1,30):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            #atom=dp.diprd(at,ion,False)
+            diprd_init=dp.diprd(at,ion,False, dippy_regime=dippy_regime)
+            atom = diprd_init.atom
             if(atom['ok'] == True):
-                #dp.trans(atom)
-                f = dp.matchf(atom,llab,ul.strip())
+                ##dp.trans(atom)
+                #f = dp.matchf(atom,llab,ul.strip())
+                f = diprd_init.matchf(llab,ul.strip())
                 out[count]=f
-                #print(at,ion,f,llab,ul.strip())
+                ##print(at,ion,f,llab,ul.strip())
 
         use= np.logical_not(np.isnan(out))
         axis[1,iseq].plot(atoms[use]+1,out[use]*const, col[kount]+'.-',label=llab+' -- '+ul.strip())
@@ -99,7 +107,7 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
     axis[1,iseq].set_ylabel(r'$f_{ABS}$ ')
     axis[1,iseq].set_xticks(atoms[::2])
     axis[1,iseq].set_xticklabels(atoms[::2], fontsize=10)
-    axis[1,iseq].set_title(r"Oscillator strengths of "+dp.atomname(sequence)+' sequence',fontsize=9)
+    axis[1,iseq].set_title(r"Oscillator strengths of "+dp.dippyClass.atomname(sequence)+' sequence',fontsize=9)
     axis[1,iseq].legend(fontsize=8)
     axis[1,iseq].set_ylim([1.e-7, 1.])
         
@@ -116,8 +124,11 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
     for at in range(sequence+1,30):
         count+=1
         ion= at-sequence+1
-        atom=dp.diprd(at,ion,False)
-        out[count]=dp.ipotl(at,ion)
+        #atom=dp.diprd(at,ion,False)
+        diprd_init=dp.diprd(at,ion,False, dippy_regime=dippy_regime)
+        atom = diprd_init.atom
+        #out[count]=dp.ipotl(at,ion)
+        out[count]=diprd_init.ipotl(ion)
         use= np.logical_not(np.isnan(out))
 
 
@@ -128,11 +139,11 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
     axis[2,iseq].set_xticks(atoms[::2])
     axis[2,iseq].set_xticklabels(atoms[::2], fontsize=10)
     axis[2,iseq].set_title(r"Level energy eV"
-                           +dp.atomname(sequence)+' sequence',fontsize=9)
+                           +dp.dippyClass.atomname(sequence)+' sequence',fontsize=9)
 ######################################################################
 
         
-    const= 100. * dp.const()['hh'] * dp.const()['cc']        / dp.const()['ee'] 
+    const= 100. * dp.dippyClass.hh * dp.dippyClass.cc        / dp.dippyClass.ee 
     kount=-1
     for ul in ulab:
         kount+=1
@@ -142,7 +153,9 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         for at in range(sequence+1,30):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            #atom=dp.diprd(at,ion,False)
+            diprd_init=dp.diprd(at,ion,False, dippy_regime=dippy_regime)
+            atom = diprd_init.atom
             e=np.nan
             done=0
             if(atom['ok'] == True and done ==0):
@@ -161,7 +174,7 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         axis[2,iseq].set_yscale('log')
         axis[2,iseq].set_xticks(atoms[::2])
         axis[2,iseq].set_xticklabels(atoms[::2], fontsize=10)
-        axis[2,iseq].set_title(r"Level energies of "+dp.atomname(sequence)+' sequence',fontsize=9)
+        axis[2,iseq].set_title(r"Level energies of "+dp.dippyClass.atomname(sequence)+' sequence',fontsize=9)
         axis[2,iseq].legend(fontsize=8)
 
 
@@ -171,10 +184,11 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
 ################################################################################
 
 plt.savefig('figisos67.png')
+plt.show()
 plt.close()
-subprocess.run(["open", "figisos67.png"]) 
+#subprocess.run(["open", "figisos67.png"]) 
     
-quit()
+#quit()
 
                     
 

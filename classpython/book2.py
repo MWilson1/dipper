@@ -63,7 +63,7 @@ for uab in levelulab:
             out[count]=omega
             outt[count]=tl
 
-                    
+
     plt.plot(atoms+1,out*const, col[kount]+'.-',label=lab[0]+' -- '+uab)
     plt.yscale('log')
     plt.xlabel('Atomic number Z')

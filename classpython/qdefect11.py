@@ -5,14 +5,13 @@ import subprocess
 import math
 import dippy as dp
 
-
-ee=dp.const()['ee']
-em=dp.const()['em']
-cc=dp.const()['cc']
-hh=dp.const()['hh']
-bk=dp.const()['bk']
-pi=dp.const()['pi']
-rydinf=dp.const()['rydinf']
+ee=dp.dippyClass.ee
+em=dp.dippyClass.em
+cc=dp.dippyClass.cc
+hh=dp.dippyClass.hh
+bk=dp.dippyClass.bk
+pi=dp.dippyClass.pi
+rydinf=dp.dippyClass.c['rydinf']
 
 plt.rcParams.update({'font.size': 13})
 plt.rcParams.update({'lines.linewidth': 2.})
@@ -26,14 +25,16 @@ lab=['s','p','d','f','g','h','i','j']
 for el in range(12,22):
 
   z=el-isos+1
-  atom=dp.diprd(el,el-isos+1,True)
+  #atom=dp.diprd(el,el-isos+1,True)
+  diprd_init=dp.diprd(el,el-isos+1,True)
+  atom = diprd_init.atom
   if(atom['ok'] == True):
     lvl=atom['lvl']
-    ip=dp.iprd()
+    ip=dp.dippyClass.iprd()
     ipj=ip[el,z]*ee
     
-    e=dp.dict2array(lvl,'e',float)* hh*cc # erg
-    pqn=dp.dict2array(lvl,'pqn',int)
+    e=dp.dippyClass.dict2array(lvl,'e',float)* hh*cc # erg
+    pqn=dp.dippyClass.dict2array(lvl,'pqn',int)
     l=pqn*0.
     nstar=l*0.
 
@@ -72,15 +73,16 @@ for el in range(12,22):
     #
     xt=np.arange(mn,mx+1)
     plt.xticks(xt)
-    plt.title('Quantum defects for '+dp.atomname(el)+ ' '+dp.roman(z))
+    plt.title('Quantum defects for '+dp.dippyClass.atomname(el)+ ' '+dp.dippyClass.roman(z))
     plt.legend()             
     plt.tight_layout()
     
     ofil='qdefect'+str(el)+str(isos)+'.png'
+    plt.show()
     plt.savefig(ofil)
     plt.close()
     
-    subprocess.run(["open", ofil]) 
+    #subprocess.run(["open", ofil]) 
 
 
 

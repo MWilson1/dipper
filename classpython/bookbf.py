@@ -23,10 +23,10 @@ sequence=5
 # levellab=['2S2 2P 2PO 3/2']
 term1= 210
 orb1=211
-print(orb1,' ',term1, dp.slp(term1))
+print(orb1,' ',term1, dp.dippyClass.slp(term1))
 term2=0
 orb2=202
-print(orb2,' ', term2, dp.slp(term2))
+print(orb2,' ', term2, dp.dippyClass.slp(term2))
 # seems to work  
 orb1 =212 # 2p^2
 term1=200 #2So
@@ -43,9 +43,11 @@ outl=out*0.
 for at in range(sequence+1,7):
     count+=1
     ion= at-sequence+1
-    atom=dp.diprd(at,ion,False)
+    #atom=dp.diprd(at,ion,False)
+    diprd_init=dp.diprd(at,ion,False, dippy_regime=dippy_regime)
+    atom = diprd_init.atom
     if(atom['ok'] == True): 
-        print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
+        print('   PLOTTING  ',at,'   ', dp.dippyClass.atomname(at), ion)
         bf=atom['bf']
         nbf=len(bf)
         for i in range(0,nbf):

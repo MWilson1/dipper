@@ -23,10 +23,10 @@ sequence=2
 # levellab=['1s2 1SE']
 term1= 100
 orb1=102
-print(orb1,' ',term1, dp.slp(term1))
+print(orb1,' ',term1, dp.dippyClass.slp(term1))
 term2=0
 orb2=1
-print(orb2,' ', term2, dp.slp(term2))
+print(orb2,' ', term2, dp.dippyClass.slp(term2))
 atoms = np.arange(sequence,30)
 
 
@@ -37,9 +37,11 @@ outl=out*0.
 for at in range(sequence,30):
     count+=1
     ion= at-sequence+1
-    atom=dp.diprd(at,ion,False)
+    #atom=dp.diprd(at,ion,False)
+    diprd_init=dp.diprd(at,ion,False)
+    atom = diprd_init.atom
     if(atom['ok'] == True): 
-        print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
+        print('   PLOTTING  ',at,'   ', dp.dippyClass.atomname(at), ion)
         bf=atom['bf']
         nbf=len(bf)
         #print(dp.keyzero(bf))
@@ -65,11 +67,12 @@ print(out)
 #plt.plot(outl,(out),'.')
 plt.plot(atoms-sequence+1,(out),'k.')
 plt.yscale('log')
-plt.title(' Photoionization '+dp.atomname(sequence) +
+plt.title(' Photoionization '+dp.dippyClass.atomname(sequence) +
           ' sequence')
 plt.xlabel(r'Atomic number')
 #plt.xlabel(r'Threshold $\lambda\  \AA$')
 plt.ylabel(r'Threshold $\sigma$ MB')
 plt.savefig('he.png')
+plt.show()
 
-subprocess.run(["open", "he.png"]) 
+#subprocess.run(["open", "he.png"]) 
