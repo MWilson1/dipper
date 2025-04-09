@@ -6,7 +6,10 @@
 
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
+
+
 Summarizing if HAOS-DIPER is right for you
+
 |---|---|
 |Targeted problems |  |
 |                  | tenuous plasma, "low energy" regime  |
@@ -49,13 +52,13 @@ available, and for accounting for the effects of missing atomic levels.
 Requirement
 
 - Database file sizes are too large to include in this repository.  
-- Download the files here: [![github](https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz)](https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz)  (with "wget" UNIX command if desired)
+- Download the files here: [https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz](https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz)  (with "wget" UNIX command if desired)
 - Unpack the file and place the "dbase" directory next to the "classpython" directory.
 
 
 Example
 
-- See the Jupyter Notebook full of examples on how pyDIPER can be used here: [![github](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9)](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9) 
+- See the Jupyter Notebook full of examples on how pyDIPER can be used here: [https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9) 
 - "Save a copy" of that Jupyter Notebook onto your own Google Drive.  Access it and run the code through the "Colab" (or "Colaboratory") app on Google.
 
 
