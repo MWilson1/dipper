@@ -10,11 +10,12 @@
 
 Summarizing if HAOS-DIPER is right for you
 
+| test | test |
 | --- | --- |
-| Targeted problems |  |
-|                  | tenuous plasma, "low energy" regime  |
-|                  | LTE to optically thin plasmas  |
-|                  | compilation of needed rate coefficients  |
+| Targeted problems | test  |
+| test                 | tenuous plasma, "low energy" regime  |
+| test                 | LTE to optically thin plasmas  |
+| test                 | compilation of needed rate coefficients  |
 
 
 
