@@ -10,12 +10,31 @@
 
 Summarizing if HAOS-DIPER is right for you
 
-| test | test |
-| --- | --- |
-| Targeted problems | test  |
-| test                 | tenuous plasma, "low energy" regime  |
-| test                 | LTE to optically thin plasmas  |
-| test                 | compilation of needed rate coefficients  |
+| Targeted problems |  |
+|                  | tenuous plasma, "low energy" regime  |
+|                  | LTE to optically thin plasmas  |
+|                  | compilation of needed rate coefficients  |
+|                  | teaching/learning spectroscopy  |
+|                  | simple statistical equilibrium calculations  |
+|                  | $\quad$- including escape probabilities  |
+|                  | simple non-equilibrium calculations  |
+|                  | $\quad$- evolution of atomic systems  |
+|                  | provide "building blocks" of data and code to permit the user to make more sophisticated calculations  |
+|                  | $\quad$- e.g, detailed radiative transfer or radiation hydrodynamics  |
+| Limitations       |  |
+|                  | elements lighter than Zn (nuclear charge 30)  |
+|                  | principal quantum numbers < 10  |
+|                  | incomplete databases  |
+|                  | photoionization data are summed over final states, and are split approximately over fine structure  |
+|                  | no impact line broadening  |
+|                  | no hyperfine structure  |
+|                  | no configuration mixing  |
+| Cannot handle     |  |
+|                  | non-Maxwellian particle distributions  |
+|                  | inner shell excitations (high energy phenomena)  |
+|                  | atomic and spectral polarization  |
+|                  | molecules  |
+|                  | accurate radiative transfer  |
 
 
 
