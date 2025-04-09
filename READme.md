@@ -55,7 +55,7 @@ available, and for accounting for the effects of missing atomic levels.
 Requirement
 
 - Database file sizes are too large to include in this repository.  
-- Download the files here: [https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz](https://www.mauricewilson.com/proxyonepager/datastorage/pyDIPER_dbase.tar.gz)  (with "wget" UNIX command if desired)
+- Download the files here: [https://www.mauricewilson.com/static/proxyonepager/datastorage/pyDIPER_dbase.tar.gz](https://www.mauricewilson.com/static/proxyonepager/datastorage/pyDIPER_dbase.tar.gz)  (with "wget" UNIX command if desired)
 - Unpack the file and place the "dbase" directory next to the "classpython" directory.
 
 
