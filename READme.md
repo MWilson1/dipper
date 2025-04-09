@@ -7,11 +7,10 @@
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
 <br>
-<br>
 
-Summarizing if HAOS-DIPER is right for you
+### Summarizing if HAOS-DIPER is right for you
 
-| `` | `` |
+| <span></span> | <span></span> |
 | --- | --- |
 | **Targeted problems** |  |
 |                  | tenuous plasma, "low energy" regime  |
@@ -41,9 +40,8 @@ Summarizing if HAOS-DIPER is right for you
 
 
 <br>
-<br>
 
-What makes (HAOS-)DIPER unique?
+### What makes (HAOS-)DIPER unique?
 
 - It is based upon the fast, flexible database software system written by D. Lindler for IDL, and takes some advantage of this system.
 - It works with quantum numbers for atomic levels, enabling it to perform tasks otherwise difficult or very tedious, including a variety of data checks, calculations
@@ -52,6 +50,7 @@ based upon the atomic numbers, and searching and manipulating data based upon th
 - There is some capability for estimating data for which no accurate parameters are
 available, and for accounting for the effects of missing atomic levels.
 
+<br>
 
 Requirement
 
