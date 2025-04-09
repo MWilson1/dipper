@@ -6,24 +6,25 @@
 
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
-
+<br>
+<br>
 
 Summarizing if HAOS-DIPER is right for you
 
-| test | test |
+| `` | `` |
 | --- | --- |
-| Targeted problems |  |
+| **Targeted problems** |  |
 |                  | tenuous plasma, "low energy" regime  |
 |                  | LTE to optically thin plasmas  |
 |                  | compilation of needed rate coefficients  |
 |                  | teaching/learning spectroscopy  |
 |                  | simple statistical equilibrium calculations  |
-|                  | $\quad$- including escape probabilities  |
+|                  | $\quad\quad$- including escape probabilities  |
 |                  | simple non-equilibrium calculations  |
-|                  | $\quad$- evolution of atomic systems  |
+|                  | $\quad\quad$- evolution of atomic systems  |
 |                  | provide "building blocks" of data and code to permit the user to make more sophisticated calculations  |
-|                  | $\quad$- e.g, detailed radiative transfer or radiation hydrodynamics  |
-| Limitations       |  |
+|                  | $\quad\quad$- e.g, detailed radiative transfer or radiation hydrodynamics  |
+| **Limitations**       |  |
 |                  | elements lighter than Zn (nuclear charge 30)  |
 |                  | principal quantum numbers < 10  |
 |                  | incomplete databases  |
@@ -31,7 +32,7 @@ Summarizing if HAOS-DIPER is right for you
 |                  | no impact line broadening  |
 |                  | no hyperfine structure  |
 |                  | no configuration mixing  |
-| Cannot handle     |  |
+| **Cannot handle**     |  |
 |                  | non-Maxwellian particle distributions  |
 |                  | inner shell excitations (high energy phenomena)  |
 |                  | atomic and spectral polarization  |
@@ -39,6 +40,8 @@ Summarizing if HAOS-DIPER is right for you
 |                  | accurate radiative transfer  |
 
 
+<br>
+<br>
 
 What makes (HAOS-)DIPER unique?
 
