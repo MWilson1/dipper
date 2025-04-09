@@ -61,7 +61,7 @@ Requirement
 
 Example
 
-- See the Jupyter Notebook full of examples on how pyDIPER can be used here: [https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay#scrollTo=xKjtYih8IMn9) 
+- See the Jupyter Notebook full of examples on how pyDIPER can be used here: [https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay?usp=sharing](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay?usp=sharing) 
 - "Save a copy" of that Jupyter Notebook onto your own Google Drive.  Access it and run the code through the "Colab" (or "Colaboratory") app on Google.
 
 
