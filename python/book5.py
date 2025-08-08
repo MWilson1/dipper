@@ -10,6 +10,16 @@ import platform
 from astropy.io import ascii
 from scipy.interpolate import CubicSpline
 
+
+at=6
+ion=4
+print('----------------------------------------------------------------------')
+atom=dp.diprd(at,ion,True)
+print(len(atom['cbb']))
+print('----------------------------------------------------------------------')
+
+
+
 figure, axis = plt.subplots(3, 2,figsize=(10,11))
 
 col=['r','b','y']
@@ -17,26 +27,24 @@ col=['r','b','y']
 dippy_regime=0  # coronal
 
 iseq=-1
-for sequence in (np.array([6,6],int)):   # loop over sequence
+
+for sequence in np.array([6,7]):   # loop over sequence
     iseq+=1
-    atoms = np.arange(sequence,30)
+    seqend=30-sequence
+    atoms = np.arange(sequence,sequence+seqend)
 
-
-    atom=dp.diprd(sequence,1,False)
+    atom=dp.diprd(sequence+1,2,True)  # choose second ion to get labels
     lvl=atom['lvl']
 
-
-    print(lvl[0].keys())
-    # dp.level(atom) # print levels
-    llab=lvl[1]['label']
-    if(sequence == 7): llab=lvl[0]['label']
-    ulab=[lvl[8]['label'],lvl[9]['label'],lvl[11]['label']]
-    print('USE FOLLOWING UPPER LEVELS')
-    print(ulab)
-    print('TO LOWER LEVEL')
-    print(llab)
-
-    atoms = np.arange(sequence,30)
+    #print(lvl[0].keys())
+    llab,lterm=dp.uniqlev(lvl, 1)
+    if(sequence == 7): llab,lterm=dp.uniqlev(lvl,0)
+    ulab=[]
+    for ij in np.array([8,9,11]):
+        ul,ut=dp.uniqlev(lvl, ij)
+        ulab.append(ul)
+    #print('USE FOLLOWING UPPER LEVELS',ulab)
+    #print('TO LOWER LEVEL',llab)
 
 ######################################################################
 #   Collision strength plot
@@ -49,13 +57,18 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         out= atoms*0  +np.nan
         outt=out*0.
         count=-1
-        for at in range(sequence+1,30):
+        for at in range(sequence+1,sequence+seqend):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            print(at,ion)
+            atom=dp.diprd(at,ion,True)
+            #print(atom.keys())
+            #print('HERE length atom["cbb"]',len(atom['cbb']))
+            #dp.col(atom)
+            #print(atom['ok'])
             if(atom['ok'] == True):
-            
                 tl, omega = dp.matchcol(atom,llab,uab)
+                #print('HERE ',tl, omega)
                 out[count]=omega
                 outt[count]=tl
                             
@@ -83,10 +96,10 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         out= atoms*0  +np.nan
         outt=out*0.
         count=-1
-        for at in range(sequence+1,30):
+        for at in range(sequence+1,sequence+seqend):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            atom=dp.diprd(at,ion,True)
             if(atom['ok'] == True):
                 #dp.trans(atom)
                 f = dp.matchf(atom,llab,ul.strip())
@@ -110,13 +123,14 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
 
 ######################################################################
 #  ionization potential
+#
     out= atoms*0  +np.nan
     count=-1
     coli='g'
-    for at in range(sequence+1,30):
+    for at in range(sequence+1,sequence+seqend):
         count+=1
         ion= at-sequence+1
-        atom=dp.diprd(at,ion,False)
+        atom=dp.diprd(at,ion,True)
         out[count]=dp.ipotl(at,ion)
         use= np.logical_not(np.isnan(out))
 
@@ -139,10 +153,10 @@ for sequence in (np.array([6,6],int)):   # loop over sequence
         out= atoms*0  +np.nan
         outt=out*0.
         count=-1
-        for at in range(sequence+1,30):
+        for at in range(sequence+1,sequence+seqend):
             count+=1
             ion= at-sequence+1
-            atom=dp.diprd(at,ion,False)
+            atom=dp.diprd(at,ion,True)
             e=np.nan
             done=0
             if(atom['ok'] == True and done ==0):

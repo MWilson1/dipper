@@ -42,7 +42,7 @@ for tl in range(k,l,delta):
     count+=1
     te=10.**(tl/100.0)
     #print(' T  n  ', te,ne)
-    n,nstar,w,e, lhs=diprd_multi_init.se(te,ne)
+    n, nstar, w, e, lhs, cmatrix =diprd_multi_init.se(te,ne)
     nout[count,:]=n
     if count ==3:
         eout=e
@@ -84,4 +84,5 @@ print(tlog)
 print('Te Ne used  ',np.log10(te),np.log10(ne))
 ####################################################################################################
 
-    
+
+

@@ -27,7 +27,7 @@ nl=len(lvl)
 ne=1.e11
 te=70000.
 lhs=np.zeros((nl,nl),float)
-n,nstar,w,e,lhs=diprd_init.se(te,ne)
+n,nstar,w,e,lhs,cmatrix=diprd_init.se(te,ne)
 
 
 lhs=np.loadtxt('ctab.dat')

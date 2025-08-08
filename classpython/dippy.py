@@ -4,17 +4,16 @@
 # Main subprograms for pydip package
 #
 ####################################################################################################
-import sqlite3
+import sqlite3, time, subprocess, platform, copy, sys, math
 import numpy as np
 from scipy.interpolate import CubicSpline
+from scipy import interpolate
+from scipy import integrate
+from scipy import special
+import scipy.special as sp
 from matplotlib import pyplot as plt
 from collections import defaultdict
 from astropy.io import ascii
-import scipy.special as sp
-import time
-import subprocess
-import platform
-
 
 
 
@@ -23,6 +22,7 @@ import platform
 class dippyClass:
 
     dippy_dbdir='../dbase/'
+    dippy_spdir='../spectra/'
 
 
     ######
@@ -43,6 +43,24 @@ class dippyClass:
     ######
     # 
     #def const():      # nominal
+    # physical constants
+    # 
+    #       EE               electon charge in V = e^2/r
+    #       HH=6.626176D-27  planck's constant 
+    #       CC=2.99792458D10 speed of light 
+    #       EM=9.109534D-28  electron mass 
+    #       UU=1.6605655D-24 hydrogen mass 
+    #       BK=1.380662D-16  Boltzmann constant 
+    #       PI=3.14159265359 pi 
+    #       GS=2.0*1.0011596389 electron spin
+    #       following combinations are stored 
+    #       HCE=HH*CC/EE*1.e8 
+    #       HC2=2.*HH*CC *1.e24 
+    #       HCK=HH*CC/BK*1.D8 
+    #       EK=EE/BK 
+    #       HNY4P=HH*CC/QNORM/4./PI*1.D-5 
+    #       RYDBERG=2*PI*PI*EM*EE*(EE/HH)*(EE/HH)*(EE/HH)/CC 
+    #       ALPHA=2*PI*ee*ee/HH/CC   fine structure constant 
     # 
     ee=1.602189e-12
     hh=6.626176e-27
@@ -50,14 +68,15 @@ class dippyClass:
     eesu=ee*cc/1.e8
     es= eesu
     em=9.109534e-28
-    gs=2.0*1.0011596389
+    gs=2.0*1.0011596389  # electron magnetic moment
     bk=1.380662e-16
     pi=3.14159265359e0
     bk=1.380662e-16
     uu=1.6605655e-24
+    alpha=2*pi*es*es/hh/cc
 
     c = {"ee":ee,"hh":hh,"cc":cc,"em":em,"gs":gs,"uu":uu,"bk":bk,"pi":pi,"hce":(hh/ee*cc)*1.e8,"hc2":2.*hh*cc *1.e24,
-    "hck":hh*cc/bk*1.e8,"ek":ee/bk,"es": es,"rydinf":2*pi*pi*em*es*(es/hh)*(es/hh)*(es),"alphafs":2*pi*es*es/hh/cc,"eesu": eesu,
+    "hck":hh*cc/bk*1.e8,"ek":ee/bk,"es": es,"rydinf":2*pi*pi*em*es*(es/hh)*(es/hh)*(es),"alphafs":alpha,"eesu": eesu,
     "a0 ": (hh/eesu)*(hh/eesu)/(4*pi*pi)/em,"bohrm":hh*eesu/4/pi/em/cc,"designations": 'SPDFGHIKLMNOQRTU'}
 
 
@@ -87,10 +106,6 @@ class dippyClass:
         for k in range(0,len(z)): 
             lab.append(dec[j]+z[k] )
 
-
-
-    dippy_regime = 1
-    dippy_approx = 0
 
 
     def __init__(self):
@@ -123,7 +138,7 @@ class dippyClass:
         return d
 
     ####################################################################################################
-    def ar85(self, te,nne):   # alpha (no charge transfer as yet)
+    def ar85(self, te,nne):   # dev (no charge transfer as yet)
         #
         #  Bound-free collisions according to Arnaud and Rothenflug 1985 and Arnaud Raymond
         #
@@ -167,6 +182,8 @@ class dippyClass:
         # cbf ollision attributes:
         #
         cbf=atom['cbf']
+        bf=atom['bf']
+        nbf=len(bf)
         nc=len(cbf)
         catom=self.dict2array(cbf,'atom',int)
         cion=self.dict2array(cbf,'ion',int)
@@ -200,20 +217,20 @@ class dippyClass:
         # match the cbf data to the metastable levels present in the atomic model
         # and return the energy level indices im and jm
         #
+        signal=0
         for im in met:
             ioni=ion[im]
             for ic in range(0,nc):    # loop over all coefficients cbf
-                if csource[ic] == 'ar85ci' and cion[ic] == ioni:   # find direct collisional ionizatio
+                # find direct collisional ionization
+                if csource[ic] == 'ar85ci' and cion[ic] == ioni:   
                     ip= float(cbf[ic]['a'])
-                    #x=ip*const()['ee']/const()['bk']/te
                     x=ip*dippyClass.ee/dippyClass.bk/te
                     a=cbf[ic]['b']
                     b=cbf[ic]['c']
                     c=cbf[ic]['d']
-
                     d=cbf[ic]['e']
                     fx=np.exp(-x)*np.sqrt(x)*(a + b*(1.+x) +
-                                              (c-x*(a+b*(2.+x)) ) * self.fone(x) + d*x*self.ftwo(x))
+                        (c-x*(a+b*(2.+x)) ) * self.fone(x) + d*x*self.ftwo(x))
                     cup = 6.69e-07/ip/np.sqrt(ip)*fx
                     #
                     # get each  upper level  jm
@@ -221,9 +238,16 @@ class dippyClass:
                     for jm in range(0,nl):
                         if(ion[jm] == (ion[im]+1) and meta[jm]==1):
                             rate[im,jm]+=cup*nne
-                            rate[jm,im]+=rate[im,jm] * nstar[im]/nstar[jm]   # three body recombination
+                            # three body recombination
+                            cdn=rate[im,jm] * nstar[im]/nstar[jm]  
+                            rate[jm,im]+=cdn
+                            #print('rate * ne ',im,jm,cup*nne,cdn*nne)
                 ##################################################
-                if(csource[ic] == 'shull82' and cion[ic] == ioni):
+                if(csource[ic] == 'shull82' and cion[ic] == ioni and
+                   (self.dippy_regime == 'coronal' or nbf ==0)):
+                    if(nbf ==0 and signal ==0):
+                        print('ar85: warning- using recombination rate coefficients')
+                        signal+=1
                     arad=float(cbf[ic]['arad'])
                     xrad=float(cbf[ic]['xrad'])
                     adi=float(cbf[ic]['adi'])
@@ -284,8 +308,7 @@ class dippyClass:
         return -1
 
     ####################################################################################################
-    @staticmethod
-    def bbcalc(gf,gu,gl,wl,typ):   # alpha
+    def bbcalc(self, gf,gu,gl,wl,typ):   # beta
         #
         # use: 
         # calculate Einstein A and B parameters of transition from gf,g, etc.
@@ -313,14 +336,12 @@ class dippyClass:
             bji=wcm*wcm*wcm/(hh*cc*cc)
             bij=bji*gu/gl
         if "F" in transitiontype:  #typ[1:1] == 'F':
-            print(typ[1:1], ' otherwise forbidden transition- SET TO ZERO')
-            #small = 1.e-20
-            #a = small
+            #if self.verbose: print(typ, ' otherwise forbidden transition- SET TO ZERO')
             a=0.
             bij=0.
             bji=0.
-        if typ[1:2] == '2':
-            #print(typ[0:2], ' quadrupole transition- SET TO ZERO')
+        if "2" in transitiontype: #typ[1:2] == '2':
+            #if self.verbose: print(typ, ' quadrupole transition- SET TO ZERO')
             a=0.
             bij=0.
             bji=0.
@@ -400,6 +421,72 @@ class dippyClass:
                count+=1
         #
         return bb
+
+
+    ####################################################################################################
+    def bfdata(self, atom):   # dev PGJ
+        #
+        # use:
+        # return distributed cross sections from LS-coupled
+        # cross-sections between terms to cross sections between individual levels
+        #
+        #
+        lvl=atom['lvl']
+        ions=self.dict2array(lvl,'ion',int)  # ions in lvl
+        ground=self.dict2array(lvl,'ground',int)  # ions in lvl
+        uion = np.unique(ions)
+        nu=len(uion)
+        if(nu < 2):
+            if self.verbose: print('bfdata: only one ion - no cross sections assigned to atom')
+            return atom
+        count=0
+        #
+        file=self.dippy_dbdir+'bfsql.db'
+        #
+        orgbf=self.bfrd(file,ions[0])  
+        #
+        for ion in range(1,len(uion)):
+            new=self.bfrd(file,uion[ion])
+            orgbf+=new  # OK because these are list types
+        #
+        #
+        # ERROR: at atomic number 15 (Phosphorus) (and with other atoms), there is nothing.
+        if len(orgbf) == 0:
+            if self.verbose: print(f'bfdata: atom {atom["name"]} is not included in bfsql.db')
+            return atom
+        #
+        newbf=[orgbf[0]]
+        tcount=0
+        for ii in range(0,nu):
+            i=uion[ii]
+            lo = self.numwhere(i,  ions)
+            nl=len(lo)
+            hi = self.numwhere(i+2,ions+ground)
+            nh=len(hi)
+            for kr in range(0,len(orgbf)):  # loop over bf data
+                for ll in range(0,nl):  # loop over all levels of ion i
+                    l=lo[ll]
+                    for hh in range(0,nh): # loop over levels of ion i+1
+                        h=hi[hh]
+                        if(lvl[l]['term1'] == orgbf[kr]['term1'] and
+                           lvl[l]['orb1'] == orgbf[kr]['orb1'] and
+                           lvl[l]['term2'] == orgbf[kr]['term2'] and
+                           lvl[l]['orb2'] == orgbf[kr]['orb2'] ):
+                            add=copy.deepcopy(orgbf[kr])
+                            add['i']=l
+                            add['j']=h
+                            add=[add]
+                            newbf=[*newbf,*add]
+                            count+=1
+
+        #print('dp.bfdata: new number of bf transitions',count, len(newbf)-1)
+        newbf=newbf[1:]
+        for kr in range(0,len(newbf)):  # loop over bf data
+            newbf[kr]['lam']=  np.frombuffer(newbf[kr]['lam'])
+            newbf[kr]['sigma']=  np.frombuffer(newbf[kr]['sigma'])
+        atom['bf'] = newbf
+        return atom
+
 
     ####################################################################################################
     def bbrd(self, file, ionnum):   # nominal
@@ -499,6 +586,10 @@ class dippyClass:
         # use: returns cbb dict object from file for atom=6, ion=2 say (C II)
         #  cbb dict contains data for bound-bound thermal collision rates 
         #
+        if(self.dippy_regime == 2):
+            print('cbbrd: regime is lte, return None')
+            quit()
+
         t0=time.time()
         conn=sqlite3.connect(file) 
         conn.row_factory = self.dict_factory
@@ -533,10 +624,7 @@ class dippyClass:
                    x[jj]['j'] <=  maxl ):cbb.append(x[jj])
                 else:
                     count+=1
-            #if(count > 0): print('WARNING cbb ',count, ' coefficients are outside range ',minl,maxl)
         conn.close()
-        #print(time.time() - t0,' seconds to read bound-bound collisional data for ',n,' levels')
-        #print(int(1000.*(time.time() - t0)/n),' milli-seconds to read one ')
         return cbb
     
     ####################################################################################################
@@ -622,44 +710,22 @@ class dippyClass:
                 print('CHECK: STOP cbb j=',cbb[ic]['j'], '> # levels',len(lvl))
                 quit()
             
-    ####################################################################################################
-    def const():      # nominal
-        # physical constans
-        # use:  e= const()['ee']
-        # 
-        #       EE               electon charge in V = e^2/r
-        #       HH=6.626176D-27  planck's constant 
-        #       CC=2.99792458D10 speed of light 
-        #       EM=9.109534D-28  electron mass 
-        #       UU=1.6605655D-24 hydrogen mass 
-        #       BK=1.380662D-16  Boltzmann constant 
-        #       PI=3.14159265359 pi 
-        #       GS=2.0*1.0011596389 electron spin
-        #       following combinations are stored 
-        #       HCE=HH*CC/EE*1.e8 
-        #       HC2=2.*HH*CC *1.e24 
-        #       HCK=HH*CC/BK*1.D8 
-        #       EK=EE/BK 
-        #       HNY4P=HH*CC/QNORM/4./PI*1.D-5 
-        #       RYDBERG=2*PI*PI*EM*EE*(EE/HH)*(EE/HH)*(EE/HH)/CC 
-        #       ALPHA=2*PI*ee*ee/HH/CC   fine structure constant 
-        #
-        ee=1.602189e-12
-        hh=6.626176e-27
-        cc=2.99792458e10
-        eesu=ee*cc/1.e8
-        es= eesu
-        em=9.109534e-28
-        gs=2.0*1.0011596389
-        bk=1.380662e-16
-        pi=3.14159265359e0
-        bk=1.380662e-16
-        uu=1.6605655e-24
+    ######################################################################
+    def col(self): # dev ??? HERE 30 July 2024 PGJ
+        cbb=self.atom['cbb']
+        l=len(cbb)
+        count=0
+        if(l <1): print('dp.col: no collisions !')
+        else:
+            print(cbb[0].keys())
+            #print(" index         E cm-1            Label             g   Lifetime s ion")
+            #for l in cbb:
+            #    print( "{0:4d} {1:16.3f}  {2:24s}  {3:5.1f}  {4:9.1e} {5:s}".
+            #           format(count,l['e'],l['label'],l['g'],l['lifetime'], roman(l['ion']) ))
+            count+=1
+        print()
+        print('dp.col: listing of b-b collisions, number =',count)
 
-        c = {"ee":ee,"hh":hh,"cc":cc,"em":em,"gs":gs,"uu":uu,"bk":bk,"pi":pi,"hce":(hh/ee*cc)*1.e8,"hc2":2.*hh*cc *1.e24,
-        "hck":hh*cc/bk*1.e8,"ek":ee/bk,"es": es,"rydinf":2*pi*pi*em*es*(es/hh)*(es/hh)*(es),"alphafs":2*pi*es*es/hh/cc,"eesu": eesu,
-        "a0 ": (hh/eesu)*(hh/eesu)/(4*pi*pi)/em,"bohrm":hh*eesu/4/pi/em/cc,"designations": 'SPDFGHIKLMNOQRTU'}
-        return c
 
 
     ####################################################################################################
@@ -819,7 +885,8 @@ class dippyClass:
         print('glan_ls not ready')
         quit()
         if (j+s == 0): return 1.0
-        gs = const()['gs']
+        #gs = const()['gs']
+        gs = dippyClass.gs
         ss = s*(s+1.)
         ll = l*(l+1.)
         jj = j*(j+1.)
@@ -855,6 +922,40 @@ class dippyClass:
                 if(ip[elem,i] < 0.): ip[elem,i]=None
                 count+=1
         return ip
+
+
+    ####################################################################################################
+    def jsun(self,nu): # dev PGJ
+    #
+    # get jsun at wavelength w in Angstrom
+    #
+    # read  ascii file if needed
+    #
+        try:
+            wtab
+        except:
+            file=self.dippy_spdir+'lisird_2008255.ascii' 
+            data=ascii.read(file,delimiter=' ')
+            wtab=data['wnm'][:]
+            jtab=data['irradiance'][:]
+        wtab*=10. # Angstrom
+        jtab *=(215.**2)/self.pi/2./10/1.e-8   # intensity in erg/cm2/s/sr/cm
+        dwdnu = self.cc/nu/nu
+        wang=self.cc*1.e8/nu
+        jnu = np.interp(wang, wtab, jtab,left=0.,right=0.) * dwdnu
+        #
+        # at longer wavelengths, smaller frequencies, use a planck
+        # function at 5800 K.
+        #
+        nulong=self.cc*1.e8/max(wtab)
+        arg= [i for i,value in enumerate(nu) if (value < nulong)]
+        if len(arg) > 0:
+            print('Adding IR wavelengths to jsun')
+            jnux= 0.5*self.planck(nu[arg],6200.)
+            jnu[arg]=jnux
+        #
+        return jnu
+
 
     ####################################################################################################
     @staticmethod
@@ -927,10 +1028,15 @@ class dippyClass:
         # LTE loop:
         #
         tnsl = glog-glog[0]- ee*ev/bk/te
+        smallflag='True'
+        smallest=sys.float_info.min*1.e2
         for k in range(1,nk):
             delta=ion[k] - ion[0]
             if(delta > 0): tnsl[k]-= delta * conl
             tns[k]=np.exp( tnsl[k] )
+            if math.isnan(tns[k]):
+                tnl[k]=smallest
+                smallflag='True'
             sumn+= tns[k]
         #
         nstar[0]=totn/sumn
@@ -1116,24 +1222,54 @@ class dippyClass:
         return out,outn
 
 
-    ####################################################################################################
+    ######################################################################
     @staticmethod
-    def planck(wm,t):  # beta
+    def pvr(z,b):  # pgj added Jul 31 2025
+        #
+        #  thermal p-function for semic empirical collision rates
+        #  reference: sobel'man - 'atomic physics ii.  '
+        #  z (Scalar) is 1 for neutrals
+        #  b (scalar) = energy / kT  (linear)
+        #
+        if(b > 10.):
+            p = 0.200
+            if(z == 0): p = 0.066 / np.sqrt(b)
+            return p
+        #
+        if(b < 0.01):
+            return 0.29*special.exp1(b)
+        #
+        #  intermediate temps (most important for eqm plasmas)
+        #  linear interpolation onto logb grid:
+        #
+        if(b >= 0.01 and b <= 10.0):
+            x = np.array([-2.0,-1.699,-1.398,-1.0,-0.699,-0.398,0.0,0.301,0.602,1.0])
+            y0 = np.array([1.160,0.956,0.758,0.493,0.331,0.209,0.100,0.063,0.040,0.023])
+            y1 =  np.array([1.160,0.977,0.788,0.554,0.403,0.290,0.214,0.201,0.200,0.200])
+            p0=interpolate.interp1d(x, y0,kind='quadratic')
+            p1=interpolate.interp1d(x, y1,kind='quadratic')
+            blog=np.log10(b)
+            p= p0(blog)
+            if(z == 1): p=p1(blog)
+            return p
+
+
+    ####################################################################################################
+    def planck(self,nu,t):  # beta
         cc=dippyClass.cc
         hh=dippyClass.hh
         bk=dippyClass.bk
-        pi=dippyClass.pi
-        nu=cc/wm
-        return  (2.*(hh*nu)*(nu/cc)*(nu/cc)) / (np.exp(hh*nu/bk/t) -1.)
+        z=nu/cc
+        return 2.*(hh*cc*z**3) / (np.exp(hh*nu/bk/t) -1.)
 
     ####################################################################################################
-    def qn(self, lvl):  # beta
+    def qn(self,lvl):  # beta  PGJ
         #
         # get quantum numbers for levels and add to lvl dictionary
         # quantum numbers S, L, P, n, nactive and meta parameter are appended to lvl
         # n= principal qn, nactive = number of outer shell electrons
         # S = 2*spin+1 of term, L = orbital ang mom of term, P = parity of configuration
-        #  meta= 1 (metstable level, i.e. all terms belonging to the ground configuration 
+        #  meta= 1 (metstable level, i.e. all terms belonging to the ground configuration
         #
         # find qn_meta (0 or 1 according to metastable or not),
         # a metastable level is one with the same configuration as the ground level
@@ -1141,6 +1277,7 @@ class dippyClass:
         #
         nl=len(lvl)
         meta=np.zeros(nl,dtype=int)
+        ground=np.zeros(nl,dtype=int)
         #
         # loop over all ions present
         #
@@ -1159,6 +1296,7 @@ class dippyClass:
             count+=1
             S,L,P,string = self.slp(lvl[ij]['term1'])
             config0=lvl[ij]['label'].rsplit(' ', 2)[0]
+            term0=lvl[ij]['label'].rsplit(' ', 3)[0]
             n,nactive=self.outerqn(config0)
             lvl[ij]['meta']=1
             lvl[ij]['pqn']= n  # all up to but excluding the ang mom
@@ -1170,12 +1308,15 @@ class dippyClass:
                 configi=lvl[ik]['label'].rsplit(' ', 2)[0]
                 if(configi == config0):
                     meta[ik]=1
+                    termi=lvl[ik]['label'].rsplit(' ', 3)[0]
+                    if(termi == term0):
+                        ground[ik]=1
                     #print('level ',ik,' with label ', configi,' ',lvl[ik]['label'], ' is metastable')
                 #
                 # define S L and P in all levels
                 #
                 # is there a space in the config? If so, edit it further
-                # 
+                #
                 yes= ' ' in configi
                 if ' ' in configi: lastwd = (configi.split(' ',1))[1]
                 #
@@ -1188,6 +1329,7 @@ class dippyClass:
                 lvl[ik]['nactive']= nactive  # all up to but excluding the ang mom
                 lvl[ik]['config']=configi
                 lvl[ik]['meta']=meta[ik]
+                lvl[ik]['ground']=ground[ik]
                 lvl[ik]['S']=int(S)
                 lvl[ik]['L']=int(L)
                 lvl[ik]['P']=int(P)
@@ -1197,6 +1339,7 @@ class dippyClass:
         #    if(lvl[i]['meta']==1): print('metastable ',i,lvl[i]['label'])
 
         return lvl
+
 
     ####################################################################################################
     def ratematrix(self, te,ne,nstar):   # beta
@@ -1208,7 +1351,6 @@ class dippyClass:
         #
         atom = self.atom
 
-
         hh=dippyClass.hh
         cc=dippyClass.cc
         em=dippyClass.em
@@ -1219,6 +1361,7 @@ class dippyClass:
         lvl=atom['lvl']
         nl=len(lvl)
         lhs=np.eye(nl,dtype=float)*0.
+        cmatrix=lhs*0.
         #
         # radiative rates, einstein A coefficients
         #
@@ -1244,14 +1387,62 @@ class dippyClass:
                 lhs[lo,up]+=0.  # no incident radiation
                 if(a < 0.): print('a ',a)
         #
-        # collisional rates, bound-bound first 
+        # photo-ionization and recombination through cross sections
+        #
+        #
+        # bound-free rates PGJ 5 aug 2025
+        #
+        atom = self.bfdata(atom)  # new bf replaces old bf
+        bf=atom['bf']
+        nt=len(bf)
+        for kr in range(0,nt):
+            lam= bf[kr]['lam']
+            #
+            # ERROR with 'lam' for certain atoms
+            if type(lam) == bytes:
+                if self.verbose: print('b-f datatable ERROR with "lam" for certain atoms!')
+                continue
+            #
+            arg= [i for i,value in enumerate(lam) if
+                  (value < bf[kr]['edgepm']/1.e2)]
+            lam=(lam[arg])
+            nu = cc*1.e8/lam
+            sigma=bf[kr]['sigma']*1.e-18  # megabarn to cm2
+            sigma=(sigma[arg])
+            nu=nu[::-1]  # reverse
+            sigma=sigma[::-1]
+            i=bf[kr]['i']
+            j=bf[kr]['j']
+            #
+            # ionization
+            #
+            jnu=self.jsun(nu)
+            integrand=sigma*4.*pi*jnu/hh/nu
+            #x=integrate.trapz(integrand,nu)
+            x = np.trapz(integrand, nu)
+            lhs[i,j] += x
+            xr=x
+            jnu = self.planck(nu,te)
+            thermal = nstar[i]/nstar[j] * np.exp(-hh*nu/bk/te)
+            integrand = np.array((jnu/hh/nu + 2*(nu/cc)**2)*sigma*thermal)
+            
+            #x=4*pi*integrate.trapz(integrand,nu) #*1.e12
+            x=4*pi*np.trapz(integrand,nu) #*1.e12
+            lhs[j,i] += x
+        #
+        # collisional rates, bound-free
         #
         cbb=atom['cbb']
+        cmatrix=self.ar85(te,ne)
+        #
+        # collisional rates, bound-bound 
+        #
         nt=len(cbb)
         tl=np.log10(te)
+        # PGJ cmn.. 1.e10 is used only to find minimum collision strength
         cmn=8.63e-06 * ne * (1.e10) / np.sqrt(te)
         for kc in range(0,nt):
-            if(kc !=0 and kc % 1000 ==0): print(kc,'/',nt)
+            if(kc !=0 and kc % 2000 ==0): print(kc,'/',nt,' collisions')
             up=cbb[kc]['j']
             lo=cbb[kc]['i']
             if(up < nl and lo < nl):
@@ -1264,33 +1455,41 @@ class dippyClass:
                 cdn= 8.63e-06 * ne * (omega/gu) / np.sqrt(te)
                 if(cdn < cmn): cmn=cdn  # needed to fill in missing collisions
                 lhs[up,lo] +=cdn 
+                cmatrix[up,lo]+=cdn
                 cup= cdn*nstar[up]/nstar[lo]
                 #cup= cdn*np.exp(-hh*cc*(lvl[up]['e']-lvl[lo]['e'])/bk/te)
                 #print(up,lo,omega,cdn)
                 lhs[lo,up] +=cup
+                cmatrix[lo,up]+=cup
         #
-        c=self.ar85(te,ne)
-        lhs+=c
+        lhs+=cmatrix
         count=0
         for i in range(0,nl):
-            lhs[i,i]=0.
             lhs[i,i] = - (lhs[i,:]).sum()
             #
             # fix for zero collision rates
             #
+            # find closest level to i
+            missing=[0]
             if(lhs[i,i] == 0.):
-                #print(' adding collisions for zero-rate level ',i,lvl[i]['label'],'    ',lvl[i]['ion'],lvl[i]['meta'])
-                lhs[i,0]=cmn/1.e6
-                lhs[0,i]=lhs[i,0]*nstar[i]/nstar[0]
+                elev=self.dict2array(lvl,'e',float)  # ions in lvl
+                elev[i]=-999
+                dif = np.absolute(lvl[i]['e'] - elev)
+                j=dif.argmin()
+                #
+                lhs[i,j]=cmn/1.e8
+                lhs[j,i]=lhs[i,j]*nstar[i]/nstar[j]
                 count+=1
                 lhs[i,i] = - (lhs[i,:]).sum()
-        #
-        if(count > 0): print(count,' levels had zero rates')
-        return lhs.T
-
+                missing=[missing,i]
+                #
+            if(count > 0): print(' ratematrix: ',count,'levels had zero rates ','missing = ',missing[1:])
+#        print('LHS',lhs.T)
+        return lhs.T, cmatrix
 
 
     ####################################################################################################
+    
     def nrescape(self,te,ne,length,vturb):   # alpha
         #
         # solve statistical equilibrium equations for atom dict with te,
@@ -1314,8 +1513,6 @@ class dippyClass:
         #
         atom = self.atom
 
-
-
         np.set_printoptions(precision=1)
         hh=dippyClass.hh
         cc=dippyClass.cc
@@ -1325,15 +1522,7 @@ class dippyClass:
         bk=dippyClass.bk
         eesu=dippyClass.eesu
         uu=dippyClass.uu
-        #hh=const()['hh']
-        #cc=const()['cc']
-        #pi=const()['pi']
-        #bk=const()['bk']
-        #em=const()['em']
-        #esu=const()['eesu']
-        #uu=const()['uu']
-        #
-        alpha = pi * eesu*eesu/em/cc
+        alpha = dippyClass.alpha  # PGJ
         ab,mass = self.abmass(atom['name'])
         lvl=atom['lvl']
         nk=len(lvl)
@@ -1341,69 +1530,46 @@ class dippyClass:
         g  = self.dict2array(lvl,'g',float)
         label = self.dict2array(lvl,'label',str)
         bb=atom['bb']
-        ntrans=len(bb)
-        powr= np.zeros(ntrans,dtype=float)
-
+        nbb=len(bb)
+        powr= np.zeros(nbb,dtype=float)
         w=self.dict2array(bb,'wl',float)  # wavelength of transition
+        bf=atom['bf']
+        nbf=len(bf)
         #
         # optically thin startup
         #
-        nstart, nstar, w, eps, lhss = self.se(te,ne)
+        nstart, nstar, w, eps, lhs, cmatrix  = self.se(te,ne)
+        # normalization
         nstart = 10.**(ab-12) * ne  *(nstart/nstart.sum())
         nstar  = 10.**(ab-12) * ne  *(nstar/nstar.sum())
-        print('nstart is thin')
+        #print('nstart is thin')
         #
         #  LTE startup
-        #nstart=nstar
+        # nstart=nstar
+        print('n start is ')
         #
-        #print('n start is LTE',nstart)
-        print(nstart)
+        #print(nstart)
         n = nstart*1.
         elim=1.e-4
         emax=1
         taumax=0.
         iteration=0
-        cbb=atom['cbb']
-        nc=len(cbb)
-        tl=np.log10(te)
-        #
-        # Newton-Raphson loop to solve transfer in
-        # mean escape probability approximation
-        # get line center optical depths
-        # set n(new) = n(old)=n + x
-        #
-        itmax=2
-        csave=np.eye(nk)*0. + 1.e-18
-        #
-        # radiative rates, einstein A coefficients
-        # build radiative part of NR lhs
-        #
-        rte=np.sqrt(te)
-        for kc in range(0,nc):
-            up=cbb[kc]['j']
-            lo=cbb[kc]['i']
-            # decode
-            temp=np.frombuffer(cbb[kc]['t'])
-            omega=np.frombuffer(cbb[kc]['o'])
-            spl = CubicSpline(temp, omega, bc_type='natural')
-            omega=spl(tl)
-            gu=lvl[up]['g']
-            csave[up,lo] += 8.63e-06 * ne * (omega/gu) / rte
-            csave[lo,up] += csave[up,lo]*nstar[up]/nstar[lo]
-
         ############################################################
-        #
-        # add b-f collisioons
         #
         ##
         ##  Main NR iteration loop
         ##
+        #
+        itmax=10
         while emax > elim and iteration < itmax:
-            t=csave*1.
-            lhs=np.eye(nk,dtype=float)*0.
+            t=cmatrix*1.
+            lhs=t*0.
             rhs=np.zeros(nk,dtype=float)*0.
-            transitiontype=0  # line transition.
-            for kr in range(0,ntrans):
+            #
+            # b-b transitions
+            #
+            ttype=0  # line transition.
+            for kr in range(0,nbb):
                 f=bb[kr]['f']
                 wl_ang=bb[kr]['wl']
                 w_cm=wl_ang/1.e8
@@ -1419,18 +1585,70 @@ class dippyClass:
                 dtdn=alpha*length/dnud
                 tau = n[lo]*dtdn
                 taumax = max(tau, taumax)
-                pesc,dpdt= self.escape(tau,transitiontype)
+                pesc,dpdt= self.escape(tau,ttype)
+                t[up,lo] += a *pesc
                 #
                 # add in the n[up]*a*pderiv*[dtaudn*x(lo)]
                 #
-                #pesc=1
-                #dpdt=0.
-                t[up,lo] += a *pesc
-                t[lo,lo] += a*dpdt*dtdn
+                tlo=a*dpdt*dtdn*n[up]
+                t[lo,lo] += tlo
+                #print('bb lo, t[lo,lo]',lo, "{:.1e}".format(tlo))
                 #
-                # radiative powr for output
+                # radiative power for output
                 #
                 powr[kr] =  (n[up] * a * pesc) * (hh*cc/w_cm)/4./pi
+            #
+            # b-f transitions
+            #
+            ttype=1  # bf transition.
+            #print('------------')
+            for kr in range(0,nbf):
+                lam= bf[kr]['lam']
+                arg= [i for i,value in enumerate(lam) if
+                         (value < bf[kr]['edgepm']/1.e2)]
+
+                lam=(lam[arg])
+                nu = cc*1.e8/lam
+                sigma=bf[kr]['sigma']*1.e-18  # megabarn to cm2
+                sigma=(sigma[arg])
+                nu=nu[::-1]  # reverse
+                sigma=sigma[::-1]
+                lo=bf[kr]['i']
+                up=bf[kr]['j']
+                #
+                # ionization
+                #
+                # incident radiation attenuated by pesc at frequency
+                # 1 kT above threshold, as a typical value.
+                #
+                beta= hh*(nu-nu[0])/bk/te
+                index = np.argmin(np.abs(beta-1))
+                tau=sigma[index]*n[lo]*length
+                dtdn=tau/n[lo]
+                pesc,dpdt= self.escape(tau,ttype)
+                jinc=self.jsun(nu)
+                jnu=jinc*pesc
+                #
+                # "{:.2f}".format(np.log10(emax)
+                #
+                # print(lo, up, "{:.1e}".format(tau), "{:.1e}".format(pesc))
+                #
+                integrand=sigma*4.*pi*jnu/hh/nu
+                #x=integrate.trapz(integrand,nu)
+                x=np.trapz(integrand,nu)
+                t[lo,up] += x
+                #
+                # recombination  jnu=Planck function)
+                #
+                jnu = self.planck(nu,te)
+                thermal = nstar[lo]/nstar[up] * np.exp(-hh*nu/bk/te)
+                integrand = np.array((jnu/hh/nu + 2*(nu/cc)**2)*sigma*thermal)
+                #a=4*pi*integrate.trapz(integrand,nu) 
+                a=4*pi*np.trapz(integrand,nu) 
+                t[up,lo] += a *pesc
+                tlo=a*dpdt*dtdn*n[up]
+                t[lo,lo] += tlo
+                #print('bf lo, t[lo,lo]',lo, "{:.1e}".format(tlo))
             #
             # build lhs and rhs from total  t[i,j]
             #
@@ -1439,23 +1657,23 @@ class dippyClass:
                 lhs[j,j] += sout
                 lhs[:,j] -= t[:,j]
                 rhs[j]   = (n * t[:,j]).sum() - n[j] * sout
-            print('r')
-            print(rhs)
             lhs=lhs.T
             isum=0
             lhs[isum,:]=1.
             rhs[isum]=0.
             # x is the linear correction in the NR scheme
+            norig=n
             x = np.linalg.solve(lhs,rhs)
             n +=  x
-            emax = np.max(np.abs(x/n))
-            print(' n/nstart',n.sum()/nstart.sum())
-            print('iter', iteration,
+            emax = np.max(np.abs(x/norig))
+            #print(' n/nstart',n.sum()/nstart.sum())
+            #print('ABS X ',np.abs(x))
+            print('iter', iteration, 
                   'lg emax error ',"{:.2f}".format(np.log10(emax)),
                   'lg tmax       ',"{:.2f}".format(np.log10(taumax)))
             iteration+=1
         #
-        return n,powr
+        return n,powr, cmatrix
 
     ####################################################################################################
     @staticmethod
@@ -1470,6 +1688,51 @@ class dippyClass:
             dp=-p
         return p,dp
 
+    ####################################################################################################
+    def synspec(self,n,powr,resolution):  # PGJ
+        atom=self.atom
+
+        hh=dippyClass.hh
+        cc=dippyClass.cc
+        em=dippyClass.em
+        ee=dippyClass.ee
+        pi=dippyClass.pi
+        bk=dippyClass.bk
+        esu=dippyClass.eesu
+        uu=dippyClass.uu
+        alpha = dippyClass.alpha
+        rpi=np.sqrt(pi)
+        #
+        lvl=atom['lvl']
+        bb=atom['bb']
+        nk=len(lvl)
+        e  = self.dict2array(lvl,'e',float)
+        g  = self.dict2array(lvl,'g',float)
+        label = self.dict2array(lvl,'label',str)
+        bb=atom['bb']
+        nbb=len(bb)
+        wmax=0.
+        wmin=3.e3
+        wl_ang=np.zeros(nbb)
+        for kr in range(0,nbb):
+            f=bb[kr]['f']
+            wl_ang[kr]=bb[kr]['wl']
+            if(wl_ang[kr] < wmin): wmin=wl_ang[kr]
+            if(wl_ang[kr] > wmax): wmax=wl_ang[kr]
+        wmax=min(wmax,3000.)
+        wmean=(wmin+wmax)/2.
+        wmean=2600.
+        dw=wmean/resolution/2/np.sqrt(np.log(2.))
+        wave = np.arange(wmin,wmax,dw/2)
+        s=wave*0.
+        for kr in range(0,nbb):
+            w0=wl_ang[kr]
+            x=np.abs(w0-wave)/dw
+            ind=(np.abs(x)< 4).nonzero()
+            y=x[ind]
+            s[ind] += powr[kr]*np.exp(-y*y)/rpi
+        return wave,s
+
 
     ####################################################################################################    
     def redatom(self, *args, **kwargs):   # alpha 
@@ -1482,8 +1745,6 @@ class dippyClass:
         #
         atom = self.atom
 
-
-
         name=atom['name']
         np.set_printoptions(precision=2)
         #
@@ -1494,6 +1755,7 @@ class dippyClass:
             inlabl.append(lvl[i]['label'])
         #
         bb=atom['bb']
+        if 'bf' in list(atom.keys()): bf=atom['bf']
         cbf=atom['cbf']
         cbb=atom['cbb']
         #
@@ -1562,13 +1824,11 @@ class dippyClass:
             #print(i, outlvl[i]['label'])
         ##########################################################################################
         # Levels are now all set, next:
-        # other atomic parameters, bb,cbb etc.
+        # other atomic parameters, bb,bf,cbb etc.
         # 
         nbb=len(bb) # bb, nbb are original arrays/ length
         outbb=[]  # output array
         count=0
-        #print(bb[0])
-        print('--------------------------------------------------------------------------------')
         print('REDATOM original # of levels  ', nl, ', new # levels = ',len(outlvl))
         for l in range(0,nbb):
             j=bb[l]['j']  # original energy level index
@@ -1584,9 +1844,28 @@ class dippyClass:
                 count+=1
         print('REDATOM original # of bb ', len(bb), ' new # bb = ',len(outbb))
         #
+        outbf=[]  # output array
+        if 'bf' in list(atom.keys()): 
+            # PGJ bf begin
+            nbf=len(bf) # bf, nbf are original arrays/ length
+            count=0
+            for l in range(0,nbf):
+                j=bf[l]['j']  # original energy level index
+                i=bf[l]['i']  # original energy level index
+                #
+                # if i and j are among the new levels, then include it
+                #
+                temporary=bf[l]
+                if inlabl[j] in outlab and inlabl[i] in outlab:
+                    temporary['i']=outlab.index(inlabl[i])
+                    temporary['j']=outlab.index(inlabl[j])
+                    outbf.append(temporary)
+                    count+=1
+            print('REDATOM original # of bf ', len(bf), ' new # bf = ',len(outbf))
+            # PGJ bf end
+
         ncbb=len(cbb)
         outcbb=[]
-        count=0
         count=0
         for l in range(0,ncbb):
             j=cbb[l]['j']  # original energy level index
@@ -1605,10 +1884,12 @@ class dippyClass:
         # output
         #
         atom=self.ltime()
-        atom={'name':name, 'lvl':outlvl,'bb':outbb,'cbb':outcbb,'cbf':cbf}
+        atom={'name':name, 'lvl':outlvl,'bb':outbb,'bf':outbf, 'cbb':outcbb,'cbf':cbf}
+        if 'bf' in list(atom.keys()): atom['bf'] = outbf 
         #
-        print('atom reduced to ',len(outlvl),' levels ',len(outbb),' bb ',len(outcbb),' cbb')
-        print('--------------------------------------------------------------------------------')
+        print('atom reduced to ',len(outlvl),' levels, ',
+              len(outbb),' bb, ',
+              len(outbf), ' bf, ',len(outcbb),' cbb')
         self.atom = atom
         return atom
 
@@ -1670,18 +1951,16 @@ class dippyClass:
         #
         #  build rate matrix and solution vector
         #
-        lhs=self.ratematrix(te,ne,nstar)
-
-
+        lhs, cmatrix=self.ratematrix(te,ne,nstar)
         therme=bk*te
         atome = e*hh*cc
         e2kt=atome/therme
         idx = np.argmin(np.abs(e2kt - 0.5))
-
         isum=idx
         lhs[isum,:]=1.
         rhs = np.arange(0,nk)*0.
         rhs[isum]=1.
+        np.set_printoptions(precision=1)
         sol = np.linalg.solve(lhs,rhs)
         #
         # emission line cooefficients
@@ -1700,7 +1979,7 @@ class dippyClass:
         w*=1.e8 # AA
         mx=np.max(eps)
         amx=np.max(a)
-        return sol, nstar, w, eps, lhs
+        return sol, nstar, w, eps, lhs, cmatrix
 
     ####################################################################################################
     @staticmethod
@@ -1729,7 +2008,7 @@ class dippyClass:
         ill =int( (islp-ispin*100)/10 )
         ipar = int(islp-ispin*100 -ill*10) 
         # 
-        strl = const()['designations'][ill]
+        strl = dippyClass.c['designations'][ill]
         sspin = str(ispin) 
         par = ['E','O'] 
         spar = par[ipar]
@@ -1752,7 +2031,6 @@ class dippyClass:
 
         name=atom['name']
         bb=atom['bb']
-        print('specid ', bb[100])
         lvl=atom['lvl']
         mindex=self.dict2array(bb,'mindex',int)
         uindex=np.unique(mindex)
@@ -1761,8 +2039,9 @@ class dippyClass:
         #
         xmin,xmax,ymin,ymax=plt.axis()
         #
-        # length of down ticks
-        dy=(ymax-ymin)/90.
+        # length of down ticks as a fraction of vertical frame size
+        #
+        dy=(ymax-ymin)/120.
         # starting height for labels
         y0=ymin+0.93*(ymax-ymin)
         done = np.zeros(len(bb),int)
@@ -1858,7 +2137,7 @@ class dippyClass:
             j=l['j']
             il=lvl[i]['label']
             jl=lvl[j]['label']
-            print( "{0:4d} {1:20s} -- {2:20s} {3:16.3f} {4:9.1e} {5:9.1e}".
+            print( "{0:4d} {1:18s} -- {2:18s} {3:16.3f} {4:9.1e} {5:9.1e}".
                    format(count,il,jl,l['wl'],l['f'],l['aji']))
             count+=1
 
@@ -2054,7 +2333,7 @@ class dippyClass:
 ####################################################################################################
 class diprd(dippyClass):
 
-    def __init__(self, atomN,ionnum, boundonly=None, dippy_regime=1, dippy_approx=0):
+    def __init__(self, atomN,ionnum, boundonly=None, dippy_regime=1, dippy_approx=0, verbose=False):
         # reads atom dict from the sql database 
         # atom= diprd(6,2) returns atom dict for C II ion
         # atom={'name','lvl','bb','bf','cbb','cbf','ok']  - general case.
@@ -2066,6 +2345,8 @@ class diprd(dippyClass):
         self.boundonly = boundonly
         self.dippy_regime = dippy_regime
         self.dippy_approx = dippy_approx
+        self.verbose = verbose
+
 
         ok=True
         ion=ionnum
@@ -2080,9 +2361,10 @@ class diprd(dippyClass):
             #print('WARNING No atomic levels found ', atomname(atom))
             atom={'name':name,'ok':False}
             self.atom = atom
-            #return atom
             return
-    #
+
+        #
+        lvl=self.qn(lvl)
         ipot=self.ipotl(ion)
         file='bbsql.db'
         bb=self.bbrd(dir+file,ion)
@@ -2101,10 +2383,8 @@ class diprd(dippyClass):
             #
             entry=self.dict2array(lvl,'entry',int)
             okay=np.asarray(entry == up).nonzero()
-            #okay=np.array(okay).squeeze()
             okay=(np.array(okay)).squeeze()
             gu=lvl[okay]['g']
-            #print('okay gu ', gu, type(gu))
             okay=np.asarray(entry == lo).nonzero()
             okay=(np.array(okay)).squeeze()
             gl=lvl[okay]['g']
@@ -2120,6 +2400,8 @@ class diprd(dippyClass):
             file='bfsql.db'
             bf=self.bfrd(dir+file,ion)
             atom= {'name':name,'lvl':lvl,'bb':bb,'bf':bf, 'ok':ok}
+            #
+            atom = self.bfdata(atom)  # new bf replaces old bf
         if(reg == 'coronal'):   # no b-f transitions, use recombination coefficients
             file='cbbsql.db'
             cbb=self.cbbrd(dir+file,lvl)
@@ -2130,21 +2412,22 @@ class diprd(dippyClass):
             file='cbbsql.db'
             cbb=self.cbbrd(dir+file,lvl)
             atom= {'name':name, 'lvl':lvl,  'bb':bb,'bf':bf,  'cbb':cbb,  'cbf':cbf, 'ok':ok}
+            #
+            atom = self.bfdata(atom)  # new bf replaces old bf
         #
         self.atom = atom
 
-        atom=self.zindex()
-        atom=self.ltime()
+        atom=self.zindex()  # start at level 0
+        atom=self.ltime()   # return lifetimes of levels
 
         self.atom = atom
-        #return atom
 
 
 
 ####################################################################################################
 class diprd_multi(dippyClass):    # alpha
 
-    def __init__(self, atomN,ions, boundonly=True, dippy_regime=1, dippy_approx=0):
+    def __init__(self, atomN,ions, boundonly=True, dippy_regime=1, dippy_approx=0, verbose=False):
         #
         #  read in  ions, such as diprd(6,[1,2,3,4]) which will read energy levels for
         #    element 6 (Carbon) for ionization stages I, II, III, IV PLUS the ground state
@@ -2156,6 +2439,7 @@ class diprd_multi(dippyClass):    # alpha
         self.boundonly = boundonly
         self.dippy_regime = dippy_regime
         self.dippy_approx = dippy_approx
+        self.verbose = verbose
 
 
         mn=min(ions)
@@ -2165,7 +2449,7 @@ class diprd_multi(dippyClass):    # alpha
             quit()
         dir=dippyClass.dippy_dbdir
         reg=self.regime()
-        boundonly=True
+        boundonly=False # PGJ by default include ion above
         #
         #  get the first atom with only bound states to append later
         #
@@ -2184,9 +2468,10 @@ class diprd_multi(dippyClass):    # alpha
             bf=atom0['bf']   
             cbb=atom0['cbb']
             cbf=atom0['cbf']
+        # PGJ enable bf transitions
         # temporarily disable bf (photo-ionization)
-        print('BF cases to be included later')
-        bf=None
+        # print('BF cases to be included later')
+        # bf=None
         #
         # loop over ions to be read
         #
@@ -2198,7 +2483,6 @@ class diprd_multi(dippyClass):    # alpha
             print('Next  ion has ',len(lvlq), 'levels and IP of ',ipot,' eV')
             for j in range(0,len(lvlq)):
                 lvlq[j]['e'] += ipot * dippyClass.ee / dippyClass.hh / dippyClass.cc
-                #print('MULRD ',lvl[j]['lifetime'])
             lvl=self.addon(lvl,lvlq)
             lvl=self.qn(lvl)  # get quantum numbers
             #
@@ -2231,7 +2515,6 @@ class diprd_multi(dippyClass):    # alpha
             #
 
         self.atom = atom
-        #return atom
 
 
 

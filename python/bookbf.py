@@ -18,8 +18,6 @@ dippy_regime=1 # full nlte
 
 sequence=5
 
-
-
 # levellab=['2S2 2P 2PO 3/2']
 term1= 210
 orb1=211
@@ -48,6 +46,7 @@ for at in range(sequence+1,7):
         print('   PLOTTING  ',at,'   ', dp.atomname(at), ion)
         bf=atom['bf']
         nbf=len(bf)
+        print(nbf)
         for i in range(0,nbf):
             #print(' -> ',i, bf[i]['orb1'],' ', bf[i]['term1'], ' ', 
             #      bf[i]['orb2'],' ', bf[i]['term2'])
