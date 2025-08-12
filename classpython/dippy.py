@@ -1425,7 +1425,7 @@ class dippyClass:
             jnu = self.planck(nu,te)
             thermal = nstar[i]/nstar[j] * np.exp(-hh*nu/bk/te)
             integrand = np.array((jnu/hh/nu + 2*(nu/cc)**2)*sigma*thermal)
-            
+
             #x=4*pi*integrate.trapz(integrand,nu) #*1.e12
             x=4*pi*np.trapz(integrand,nu) #*1.e12
             lhs[j,i] += x
@@ -1435,7 +1435,7 @@ class dippyClass:
         cbb=atom['cbb']
         cmatrix=self.ar85(te,ne)
         #
-        # collisional rates, bound-bound 
+        # collisional rates, bound-bound
         #
         nt=len(cbb)
         tl=np.log10(te)
@@ -1446,7 +1446,7 @@ class dippyClass:
             up=cbb[kc]['j']
             lo=cbb[kc]['i']
             if(up < nl and lo < nl):
-                # decode 
+                # decode
                 temp=np.frombuffer(cbb[kc]['t'])
                 omega=np.frombuffer(cbb[kc]['o'])
                 spl = CubicSpline(temp, omega, bc_type='natural')
@@ -1454,7 +1454,7 @@ class dippyClass:
                 gu=lvl[up]['g']
                 cdn= 8.63e-06 * ne * (omega/gu) / np.sqrt(te)
                 if(cdn < cmn): cmn=cdn  # needed to fill in missing collisions
-                lhs[up,lo] +=cdn 
+                lhs[up,lo] +=cdn
                 cmatrix[up,lo]+=cdn
                 cup= cdn*nstar[up]/nstar[lo]
                 #cup= cdn*np.exp(-hh*cc*(lvl[up]['e']-lvl[lo]['e'])/bk/te)
@@ -1472,20 +1472,21 @@ class dippyClass:
             # find closest level to i
             missing=[0]
             if(lhs[i,i] == 0.):
-                elev=self.dict2array(lvl,'e',float)  # ions in lvl
-                elev[i]=-999
-                dif = np.absolute(lvl[i]['e'] - elev)
-                j=dif.argmin()
+                print('Zero collisions for ', i, lvl[i])
+                j=0 # couple to ground state
                 #
-                lhs[i,j]=cmn/1.e8
-                lhs[j,i]=lhs[i,j]*nstar[i]/nstar[j]
+                lhs[j,i]+=cmn/1.e12
+                lhs[i,j]+=lhs[j,i]*nstar[j]/nstar[i]
                 count+=1
                 lhs[i,i] = - (lhs[i,:]).sum()
+                cmatrix[j,i] = lhs[j,i]
+                cmatrix[i,j] = lhs[i,j]
                 missing=[missing,i]
                 #
-            if(count > 0): print(' ratematrix: ',count,'levels had zero rates ','missing = ',missing[1:])
-#        print('LHS',lhs.T)
+            if(count > 0):
+                print(' ratematrix: ',count,'levels had zero rates ','missing = ',missing[1:])
         return lhs.T, cmatrix
+
 
 
     ####################################################################################################
