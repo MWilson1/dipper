@@ -56,7 +56,7 @@ available, and for accounting for the effects of missing atomic levels.
 - The database file sizes are too large to include in this repository.  
 - The files are within a tar archive compressed with gzip that can be downloaded here: [DIPPER_dbase.tar.gz](https://www.mauricewilson.com/static/proxyonepager/datastorage/DIPPER_dbase.tar.gz)
 - Unpack the file and place the "dbase" directory next to the "spectra" directory.
-"""
+```
 $ tar -xvz -f DIPPER_dbase.tar.gz
     dbase/
     dbase/ar85ci.dat
@@ -74,36 +74,36 @@ $ tar -xvz -f DIPPER_dbase.tar.gz
     dbase/shull82.dat
     dbase/shull82changes.txt
     dbase/shull82changes.txt.gz
-"""
+```
 
 <br>
 
 ## Setting Conda Environment 
 It is useful to create a conda environment first, like so:
-"""
+```
 $ conda create --name dipper
 $ conda activate dipper
 $ conda install python numpy astropy scipy matplotlib
-"""
-<--
+```
+<!--
 $ conda install dipper
 -->
 
 <br>
 
-<--
+<!--
 ## Download/clone the repository
-"""
+```
 $ git clone https://github.com/MWilson1/dipper.git
 $ cd dipper
 $ pip install dist\dipper-0.0.0.tar.gz
-"""
+```
 -->
 ## Installation
 The DIPPER package can be installed via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following line of code:
-"""
+```
 $ python -m pip install dipper
-"""
+```
 
 
 ## Example
