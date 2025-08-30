@@ -1,0 +1,131 @@
+
+
+
+Data are from lisird- a spectrum from
+solar minimum 2008.
+
+ReadMe_SSI3_Extend_2020-05-17.txt
+---------------------------------
+Contact: Tom Woods
+Email:  tom.woods@lasp.colorado.edu
+Date: May 17, 2021
+
+The new SSI3 composite has extensions up to 1600 nm using SORCE SIM
+data (and model for gaps) and uses the GSFC SSI2 composite with
+adjustments guided by proxy modeling of SORCE and OMI solar irradiance
+measurements (OMI for 265-500 nm and SORCE elsewhere).
+
+The updated SSI3 composite has extensions down to 0.5 nm using SORCE
+XPS (0-6 nm), SDO EVE (6-33 nm), and TIMED SEE (33-120 nm). It also
+has correction for 500-1600 nm range to agree with TSIS-1 SIM
+irradiance reference on March 14, 2018.  This correction is less than
+1% for 500-900 nm and is as large as 5% for the NIR (900-1600 nm).
+
+The motiviation for these adjustments to GSFC SSI2 is to reduce the
+offset levels between the different irradiance measurement sets and to
+adjust the UV part of the SSI2 composite to the same level as SORCE
+SOLSTICE that has higher radiometric accuracy than past observations.
+This approach does remove any long term trends in the SSI2 composite
+that is not consistent with the proxy long term trends.  Several
+different proxies are used to be representative of different layers of
+the solar atmosphere and sources of solar variability.  None of the
+proxies showed any significant long-term trend, so any significant
+offsets in the SSI composite are assumed to be related to calibration
+differences between different instruments and should be corrected.
+
+File Information for SSI3_EXT_0NM_1600NM
+----------------------------------------
+
+The IDL save-set file is ssi3_ext_0nm_1600nm.sav and it has the
+variable called "ssi3_ext".  The data structure of SSI3_EXT is the
+following with units in parenthesis ().  The IDL restore procedure is
+used to read this file.  IDL> restore, "ssi3_ext_0nm_1600nm.sav"
+
+The NetCDF file is ssi3_ext_0nm_1600nm.ncdf, and it has the same data
+/ structure as the IDL save-set.  The read_netcdf.pro file can be used
+to read this file.  IDL> read_netcdf, "ssi3_ext_0nm_1600nm.ncdf",
+ssi3_ext, ssi3_attributes, status
+
+IDL> help,ssi3_ext,/str
+** Structure <20abc08>, 6 tags, length=165722064, data length=165722064, refs=1:
+   WAVELENGTH      FLOAT     Array[920]			(nm)
+   DATE_YD         DOUBLE    Array[14989]		(YYYYDOY date format)
+   DATE_JD         DOUBLE    Array[14989]		(Julian Day format)
+   IRRADIANCE      FLOAT     Array[14989, 920]	(mW/m^2/nm)
+   FLAG_SOURCE     FLOAT     Array[14989, 920]	(number from -1 to 139 that represents data source)
+   MODEL           FLOAT     Array[14989, 920]	(mW/m^2/nm)
+   UNCERTAINTY_IRRADIANCE   FLOAT     Array[920]    (unitless, % relative accuracy)
+   UNCERTAINTY_MODEL        FLOAT     Array[920]    (unitless, % relative accuracy)
+
+WAVELENGTH = SSI3 wavelength array from 0.5 nm to 1597.5 nm in 1-nm bins up to 750 nm
+				and in 5-nm bins above 750 nm
+
+DATE_YD = Dates for each spectrum in YYYYDOY format:  1978/312 to 2019/325
+
+DATE_JD = Dates for each spectrum in Julian Day format
+
+IRRADIANCE = SSI3 composite spectral irradiance data
+				This includes adjustments to the GSFC SSI2 data (115-500 nm) and
+				extensions out to 1600 nm using SORCE SIM data.  Proxy models are used to fill gaps.
+
+FLAG_SOURCE = number from -1 to 139 that represents data source that uses definition in GSFC SSI2.
+			Modification is that data type "9" is for adjustments / corrections made for SSI3, and
+			an offset of 0.5 is made for the data type if 5-day smoothed result is substituted for
+			noise spikes (> 3 sigma) in the composite time series.
+
+MODEL = proxy model irradiance time series as based on SORCE or OMI measurements.
+			OMI is used for 265-500 nm range and SORCE is used for 115-265 nm and 500-1600 nm ranges.
+
+UNCERTAINTY_IRRADIANCE = relative accuracy (percentage) for the IRRADIANCE values
+
+UNCERTAINTY_MODEL = relative accuracy (percentage) for the MODEL values that is calculated as
+					the standard deviation of the difference between the reference data set and model
+
+From GSFC SSI2 composite notes:
+The "flag_source" field in each data record contains the source code.
+The 10's digit indicates the instrument: 10 (Nimbus-7), 20 (SME), 30 (NOAA-9), 40 (NOAA-11),
+50 (UARS-SUSIM), 60 (UARS-SOLSTICE), 70 (NOAA-16 SBUV/2), 80 (Aura OMI), 90 (SORCE SOLSTICE),
+100 (Proxy Model).   A -1 means No Data Source.
+The 1's digit indicates the data type: 0 (Raw), 1 (Interpolated), 2 (Manipulated),
+6 (Mg-II + contrast; observed), 7 (Mg-II + scale; observed).
+
+For SSI3 extension, the new "flag_source" values are 110 for SORCE XPS, 120 for SDO EVE, and
+130 TIMED SEE.  Also, the 1's digit value with offset of 0.5 means the data was adjusted for noise from
+checking for larger than expected time series differences over a 5-day period.
+
+Proxy Model Notes
+-----------------
+A two component proxy model is fitted to the irradiance time series at each wavelength using
+a variety of different proxies.  The two components include a long-term (LT) component being
+the 81-day smoothed proxy and a short-term (ST) component being the daily proxy minus the
+81-day smoothed proxy.  The proxies tested in the proxy model fits are:
+	Sunspot Number (version 2) - photosphere
+	Mg C/W Index (Bremen) - chromosphere
+	Lyman-alpha (LASP) - transition region
+	F10.7 (Penticon) - corona
+	Super Proxy (Woods et al., 2018 MuSIL proxy) - combination of 7 different proxies
+	TSI - photosphere
+
+There is also the Visible 2-component model that has a bright faculae
+component being the Mg C/W index scaled to the TSI composite variability and a dark sunspot
+component being the TSI composite minus the scaled Mg C/W index.
+
+The best proxy is selected based on the largest fit correlation with the following result:
+	F10.7 for 0-6 nm
+	Lyman-alpha for 6-208 nm
+	Mg C/W for 208-290 nm
+	Visible 2-component for 290-1600 nm
+
+Presentation Slide File
+-----------------------
+The Acrobat PDF file named Woods_SSI3_Development_2020-07-15.pdf describes the development of the SSI3
+composite.
+
+Reference Paper about SSI3 Composite
+------------------------------------
+Woods, T. N. and DeLand, M. T., An Improved Solar Spectral Irradiance Composite Record,
+	Earth and Space Science, in review, 2021.
+
+Future Work
+------------
+1.  Validate / improve "SSI4" with TSIS-1 new variability results during solar cycle 25.
