@@ -49,7 +49,6 @@ based upon the atomic numbers, and searching and manipulating data based upon th
 - There is some capability for estimating data for which no accurate parameters are
 available, and for accounting for the effects of missing atomic levels.
 
-<br>
 
 ## Requirement
 - A database of atomic quantum states and transition rates is needed. The CHIANTI atomic database has been re-organized and reformatted into an assortment of database files that is convenient for the DIPPER code to access it for education and research purposes. 
@@ -76,7 +75,6 @@ $ tar -xvz -f DIPPER_dbase.tar.gz
     dbase/shull82changes.txt.gz
 ```
 
-<br>
 
 ## Setting Conda Environment 
 It is useful to create a conda environment first, like so:
@@ -89,7 +87,6 @@ $ conda install python numpy astropy scipy matplotlib
 $ conda install dipper
 -->
 
-<br>
 
 <!--
 ## Download/clone the repository
