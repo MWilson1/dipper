@@ -6,7 +6,7 @@
 
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
-<br>
+<span></span>\
 
 ## Summarizing if DIPPER is right for you
 
@@ -38,7 +38,6 @@
 |                  | molecules  |
 |                  | accurate radiative transfer  |
 
-
 <br>
 
 ## What makes DIPPER unique?
@@ -49,7 +48,7 @@ based upon the atomic numbers, and searching and manipulating data based upon th
 - There is some capability for estimating data for which no accurate parameters are
 available, and for accounting for the effects of missing atomic levels.
 
-<span></span>
+<span></span>\
 
 ## Requirement
 - A database of atomic quantum states and transition rates is needed. The CHIANTI atomic database has been re-organized and reformatted into an assortment of database files that is convenient for the DIPPER code to access it for education and research purposes. 
@@ -77,7 +76,6 @@ $ tar -xvz -f DIPPER_dbase.tar.gz
 ```
 
 <span></span>\
-<span></span>
 
 ## Setting Conda Environment 
 It is useful to create a conda environment first, like so:
@@ -91,7 +89,6 @@ $ conda install dipper
 -->
 
 <span></span>\
-<span></span>
 
 ## Download/clone the repository and (offline) installation
 The DIPPER package can be installed via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following lines of code:
@@ -102,14 +99,12 @@ $ pip install dist/dipper-0.0.0.tar.gz
 ```
 
 <span></span>\
-<span></span>
 
 ## Example
 - See the Jupyter Notebook full of examples on how DIPPER can be used [here](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay?usp=sharing). 
 - "Save a copy" of that Jupyter Notebook onto your own Google Drive.  Access it and run the code through the "Colab" (or "Colaboratory") app on Google.
 
 <span></span>\
-<span></span>
 
 ## Acknowledgment
 DIPPER is the python version of the original HAOS-DIPER code written in IDL. HAOS-DIPER grew out of a need to work with and manipulate data for neutral atoms and atomic ions to understand radiation emitted by some space plasmas, notably the solar atmosphere and stellar atmospheres. An early version was described by [Judge and Meisner (1994)](https://ui.adsabs.harvard.edu/abs/1994ESASP.373...67J/abstract).  This IDL code can be found at [www.hao.ucar.edu/modeling/haos-diper/](https://www.hao.ucar.edu/modeling/haos-diper/).
