@@ -89,29 +89,23 @@ $ conda install python numpy astropy scipy matplotlib
 $ conda install dipper
 -->
 
+<span></span>
 
-<!--
-## Download/clone the repository
+## Download/clone the repository and (local) installation
+The DIPPER package can be installed locally via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following line of code:
 ```
 $ git clone https://github.com/MWilson1/dipper.git
 $ cd dipper
-$ pip install dist\dipper-0.0.0.tar.gz
-```
--->
-## Installation
-The DIPPER package can be installed via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following line of code:
-<!--
-$ python -m pip install dipper
--->
-```
 $ pip install dist/dipper-0.0.0.tar.gz
 ```
 
+<span></span>
 
 ## Example
 - See the Jupyter Notebook full of examples on how DIPPER can be used [here](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay?usp=sharing). 
 - "Save a copy" of that Jupyter Notebook onto your own Google Drive.  Access it and run the code through the "Colab" (or "Colaboratory") app on Google.
 
+<span></span>
 
 ## Acknowledgment
 DIPPER is the python version of the original HAOS-DIPER code written in IDL. HAOS-DIPER grew out of a need to work with and manipulate data for neutral atoms and atomic ions to understand radiation emitted by some space plasmas, notably the solar atmosphere and stellar atmospheres. An early version was described by Judge and Meisner (1994).  This IDL code can be found at [www.hao.ucar.edu/modeling/haos-diper/](www.hao.ucar.edu/modeling/haos-diper/).
