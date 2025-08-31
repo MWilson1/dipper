@@ -108,7 +108,7 @@ $ pip install dist/dipper-0.0.0.tar.gz
 <span></span>
 
 ## Acknowledgment
-DIPPER is the python version of the original HAOS-DIPER code written in IDL. HAOS-DIPER grew out of a need to work with and manipulate data for neutral atoms and atomic ions to understand radiation emitted by some space plasmas, notably the solar atmosphere and stellar atmospheres. An early version was described by Judge and Meisner (1994).  This IDL code can be found at [www.hao.ucar.edu/modeling/haos-diper/](www.hao.ucar.edu/modeling/haos-diper/).
+DIPPER is the python version of the original HAOS-DIPER code written in IDL. HAOS-DIPER grew out of a need to work with and manipulate data for neutral atoms and atomic ions to understand radiation emitted by some space plasmas, notably the solar atmosphere and stellar atmospheres. An early version was described by [Judge and Meisner (1994)](https://ui.adsabs.harvard.edu/abs/1994ESASP.373...67J/abstract).  This IDL code can be found at [www.hao.ucar.edu/modeling/haos-diper/](https://www.hao.ucar.edu/modeling/haos-diper/).
 
 
 
