@@ -92,7 +92,7 @@ $ conda install dipper
 <span></span>
 
 ## Download/clone the repository and (local) installation
-The DIPPER package can be installed locally via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following line of code:
+The DIPPER package can be installed locally via a terminal (for macOS or Linux) or command prompt (for Windows) by running the following lines of code:
 ```
 $ git clone https://github.com/MWilson1/dipper.git
 $ cd dipper
