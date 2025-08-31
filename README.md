@@ -6,6 +6,7 @@
 
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
+<span></span>\
 <span></span>
 
 ## Summarizing if DIPPER is right for you
@@ -48,6 +49,7 @@ based upon the atomic numbers, and searching and manipulating data based upon th
 - There is some capability for estimating data for which no accurate parameters are
 available, and for accounting for the effects of missing atomic levels.
 
+<span></span>\
 <span></span>
 
 ## Requirement
@@ -75,6 +77,7 @@ $ tar -xvz -f DIPPER_dbase.tar.gz
     dbase/shull82changes.txt.gz
 ```
 
+<span></span>\
 <span></span>
 
 ## Setting Conda Environment 
@@ -88,6 +91,7 @@ $ conda install python numpy astropy scipy matplotlib
 $ conda install dipper
 -->
 
+<span></span>\
 <span></span>
 
 ## Download/clone the repository and (offline) installation
@@ -98,12 +102,14 @@ $ cd dipper
 $ pip install dist/dipper-0.0.0.tar.gz
 ```
 
+<span></span>\
 <span></span>
 
 ## Example
 - See the Jupyter Notebook full of examples on how DIPPER can be used [here](https://colab.research.google.com/drive/1aU5syF0ddQytI3-UoP6XiEAKPJUeAfay?usp=sharing). 
 - "Save a copy" of that Jupyter Notebook onto your own Google Drive.  Access it and run the code through the "Colab" (or "Colaboratory") app on Google.
 
+<span></span>\
 <span></span>
 <!--
 <span></span>\
