@@ -6,8 +6,6 @@
 
 **Contact:** judge@ucar.edu ; mauricew@ucar.edu
 
-<span></span>\
-<span></span>
 
 ## Summarizing if DIPPER is right for you
 
